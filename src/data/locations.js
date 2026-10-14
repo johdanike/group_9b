@@ -1,0 +1,17 @@
+export const LOCATIONS = [
+  'Lagos, Nigeria',
+  'Abuja, Nigeria',
+  'Port Harcourt, Nigeria',
+  'Kano, Nigeria',
+  'Ibadan, Nigeria',
+  'Enugu, Nigeria',
+  'Benin City, Nigeria',
+  'Kaduna, Nigeria',
+  'Accra, Ghana',
+  'Nairobi, Kenya',
+  'Kampala, Uganda',
+  'Johannesburg, South Africa',
+  'London, UK',
+  'New York, USA',
+  'Toronto, Canada',
+]
