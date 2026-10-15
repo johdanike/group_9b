@@ -37,6 +37,12 @@ export class Report {
   @Column({ type: 'jsonb', name: 'evidence_references', nullable: true })
   evidenceReferences: any;
 
+  @Column({ type: 'int', name: 'confirmations_count', default: 0 })
+  confirmationsCount: number;
+
+  @Column({ type: 'int', name: 'disputes_count', default: 0 })
+  disputesCount: number;
+
   @ManyToOne('User', 'reports')
   @JoinColumn({ name: 'reporter_id' })
   reporter: any;
