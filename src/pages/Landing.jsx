@@ -11,8 +11,8 @@ const STEPS = [
   },
   {
     number: '02',
-    title: 'Pick your location',
-    text: 'Choose your city during registration so we know which community you belong to.',
+    title: 'Pick your local governments',
+    text: 'Choose up to 3 Lagos local governments during registration so we know which communities you belong to.',
   },
   {
     number: '03',
@@ -45,7 +45,7 @@ const FEATURES = [
   },
   {
     title: 'Location-based community',
-    text: 'Connect naturally with people around you — from Lagos to Nairobi, your street to your city.',
+    text: 'Connect naturally with people around you — from Ikeja to Lagos Island, your LGA to your street.',
     icon: (
       <>
         <circle cx="12" cy="12" r="9" />
@@ -77,7 +77,7 @@ const FEATURES = [
 
 const STATS = [
   { value: '120k+', label: 'People onboard' },
-  { value: '350+', label: 'Locations covered' },
+  { value: '20', label: 'Lagos LGAs covered' },
   { value: '2.4M', label: 'Notifications sent' },
   { value: '<1s', label: 'Average delivery' },
 ]
@@ -109,11 +109,11 @@ const TESTIMONIALS = [
 const FAQS = [
   {
     q: 'What is "E don happen"?',
-    a: 'It is a location-based notification app. You register and choose your location once, and from then on you receive notifications from — and send notifications to — everyone who selected the same location.',
+    a: 'It is a location-based notification app. You register and pick up to 3 Lagos local governments, and from then on you receive notifications from — and send notifications to — everyone who selected the same location.',
   },
   {
-    q: 'How do locations work?',
-    a: 'During registration you pick your location from the list (cities for now). That location becomes your community. Later we will add search and map-based selection for even finer areas.',
+    q: 'How do local governments work?',
+    a: 'During registration you pick up to 3 of the 20 Lagos local governments (Ikeja, Surulere, Lagos Island…). Those LGAs become your communities, and you receive notifications from all of them.',
   },
   {
     q: 'Is it free to use?',
@@ -121,7 +121,7 @@ const FAQS = [
   },
   {
     q: 'Who can see my location?',
-    a: 'Nobody sees your precise location. Your selected location only matches you into a community — other members see notifications, not where you live.',
+    a: 'Nobody sees your precise address. Your selected local governments only match you into communities — other members see notifications, not where you live.',
   },
   {
     q: 'Do I need to keep the app open?',
@@ -146,7 +146,7 @@ export default function Landing() {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary-soft px-4 py-1.5 text-xs font-semibold text-ink">
               <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-              Live in 350+ locations
+              Live across Lagos
             </span>
             <h1 className="mt-5 text-4xl font-black leading-[1.05] tracking-tight text-ink sm:text-5xl lg:text-6xl">
               Something happen?
@@ -154,9 +154,9 @@ export default function Landing() {
               <span className="text-primary-dark">E don happen.</span>
             </h1>
             <p className="mt-5 max-w-lg text-base leading-relaxed text-ink-soft sm:text-lg">
-              Pick your location at sign-up and get notified the moment something happens
-              where you are. Everyone at the same spot, one alert — no noise from anywhere
-              else.
+              Pick up to 3 Lagos local governments at sign-up and get notified the moment
+              something happens where you are. Everyone at the same spot, one alert — no noise
+              from anywhere else.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link to="/register" className="btn-primary">
@@ -195,7 +195,7 @@ export default function Landing() {
                   <span className="text-sm font-bold text-ink">E don happen</span>
                   <span className="flex items-center gap-1.5 rounded-full bg-primary-soft px-2.5 py-1 text-[10px] font-semibold text-ink">
                     <span className="size-1.5 rounded-full bg-primary" />
-                    Lagos, Nigeria
+                    Ikeja +2
                   </span>
                 </div>
                 <div className="space-y-3 p-4">

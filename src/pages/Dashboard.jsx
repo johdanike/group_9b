@@ -3,12 +3,26 @@ import { Link, useNavigate } from 'react-router-dom'
 
 function readUser() {
   try {
-    return JSON.parse(sessionStorage.getItem('edh:user') || 'null')
+    const stored = JSON.parse(sessionStorage.getItem('edh:user') || 'null')
+    if (!stored) return null
+    const lgas = Array.isArray(stored.lgas)
+      ? stored.lgas
+      : stored.location
+        ? [stored.location]
+        : []
+    return { ...stored, lgas }
   } catch {
     sessionStorage.removeItem('edh:user')
     return null
   }
 }
+
+const lgaSummary = (lgas = []) =>
+  lgas.length === 0
+    ? 'No location set'
+    : lgas.length <= 2
+      ? lgas.join(', ')
+      : `${lgas[0]}, ${lgas[1]} +${lgas.length - 2}`
 
 const MOCK_NOTIFICATIONS = [
   {
@@ -79,7 +93,7 @@ export default function Dashboard() {
                   <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z" />
                   <circle cx="12" cy="10" r="2.5" />
                 </svg>
-                {user?.location ?? 'No location set'}
+                {lgaSummary(user?.lgas)}
               </div>
             </div>
           </div>
@@ -87,7 +101,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <span className="hidden items-center gap-2 rounded-full border border-primary/40 bg-white px-3 py-1.5 text-xs font-semibold text-ink sm:inline-flex">
               <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-              Live at your location
+              Live at your locations
             </span>
             <button type="button" onClick={handleLogout} className="btn-outline text-sm">
               Log out
@@ -117,7 +131,7 @@ export default function Dashboard() {
             {activeTab === 'Overview' || activeTab === 'Notifications' ? (
               <div className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-bold text-ink">Latest at your location</h2>
+                  <h2 className="text-base font-bold text-ink">Latest at your locations</h2>
                   <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-ink">
                     {notifications.length} new
                   </span>
@@ -174,10 +188,11 @@ export default function Dashboard() {
                       </svg>
                     </span>
                     <h3 className="mt-4 text-base font-bold text-ink">
-                      No notifications yet at your location
+                      No notifications yet at your locations
                     </h3>
                     <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-ink-soft">
-                      Nothing has happened around {user?.location ?? 'your location'} recently.
+                      Nothing has happened around{' '}
+                      {user?.lgas?.length ? user.lgas.join(', ') : 'your locations'} recently.
                       As soon as something does, you will see it right here.
                     </p>
                     <div className="mt-5">
@@ -211,32 +226,41 @@ export default function Dashboard() {
           <aside className="space-y-6">
             <div className="rounded-3xl border border-ink/10 bg-ink p-6 text-white">
               <h2 className="text-sm font-bold uppercase tracking-wider text-white/70">
-                Your location
+                Your locations
               </h2>
-              <p className="mt-3 flex items-center gap-2 text-xl font-bold">
-                <span className="grid size-8 place-items-center rounded-full bg-primary text-ink">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="size-4"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z" />
-                    <circle cx="12" cy="10" r="2.5" />
-                  </svg>
-                </span>
-                {user?.location ?? 'Not set'}
-              </p>
+              {user?.lgas?.length ? (
+                <ul className="mt-3 flex flex-wrap gap-2">
+                  {user.lgas.map((lga) => (
+                    <li
+                      key={lga}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-ink"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="size-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z" />
+                        <circle cx="12" cy="10" r="2.5" />
+                      </svg>
+                      {lga}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-xl font-bold">Not set</p>
+              )}
               <p className="mt-3 text-xs leading-relaxed text-white/60">
-                You receive notifications only from this location. Change it later from your
-                profile.
+                You receive notifications from up to 3 Lagos local governments. Change them
+                later from your profile.
               </p>
             </div>
 
             <div className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-ink">People at this location</h2>
+                <h2 className="text-base font-bold text-ink">People at your locations</h2>
                 <span className="text-xs font-semibold text-ink-soft">{MOCK_PEOPLE.length}</span>
               </div>
               <ul className="mt-4 space-y-3">

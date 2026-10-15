@@ -161,7 +161,7 @@ export default function Register() {
           </button>
 
           <p className="mt-4 text-center text-xs text-ink-soft">
-            Your location is only used to match you with your community.
+            Your local governments are only used to match you with your communities.
           </p>
         </form>
       </div>

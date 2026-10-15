@@ -1,6 +1,6 @@
 # E don happen
 
-A location-based notification app: register, pick your location, and get notified when something happens where you are — only people at the same location see it.
+A location-based notification app: register, pick up to 3 Lagos local governments, and get notified when something happens where you are — only people at the same location see it.
 
 ## Stack
 
@@ -16,7 +16,7 @@ Brand colors: primary vivid-green `#12D900`, ink black-grey `#303234`.
 | Route | Description |
 |---|---|
 | `/` | Landing page — hero, how it works, features, social proof, FAQ, CTA |
-| `/register` | Sign-up form with location dropdown (sample list) |
+| `/register` | Sign-up form with multi-select of up to 3 Lagos local governments |
 | `/login` | Log-in form |
 | `/dashboard` | User dashboard shell — notifications, people at location (demo data) |
 
@@ -46,8 +46,8 @@ node scripts/generate-icons.mjs
 
 ```
 src/
-├── components/     Navbar, Footer, Logo, LocationSelect, cards, accordion
-├── data/           locations.js (sample location list)
+├── components/     Navbar, Footer, Logo, LgaMultiSelect, cards, accordion
+├── data/           lgas.js (20 Lagos local governments, max 3 selections)
 ├── pages/          Landing, Register, Login, Dashboard
 ├── App.jsx         routes
 ├── main.jsx        router + service-worker registration
