@@ -34,8 +34,8 @@ export class Report {
   @Column({ type: 'varchar', length: 50, default: 'Unverified' })
   state: string;
 
-  @Column({ type: 'jsonb', name: 'evidence_references', nullable: true })
-  evidenceReferences: any;
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: any;
 
   @ManyToOne('User', 'reports')
   @JoinColumn({ name: 'reporter_id' })
