@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomInt } from 'node:crypto';
+import { mkdir, writeFile, rename } from 'node:fs/promises';
+import { resolve, dirname } from 'node:path';
 
 @Injectable()
 export class OtpService {
@@ -12,6 +14,7 @@ export class OtpService {
     string,
     { code: string; expiresAt: number; attempts: number }
   >();
+  private mailboxWrite: Promise<void> = Promise.resolve();
   private readonly requests = new Map<string, number[]>();
   constructor(private readonly config: ConfigService) {}
 
@@ -40,11 +43,42 @@ export class OtpService {
     this.requests.set(phone, [...recent, now]);
     const code = String(randomInt(100000, 1000000));
     this.otpStore.set(phone, { code, expiresAt: now + 5 * 60000, attempts: 0 });
+    await this.persistMailbox();
     return {
       success: true,
-      message: 'Local demo code generated. No SMS was sent.',
-      demoOtp: code,
+      message: 'Verification requested. Contact the demo host for your code.',
     };
+  }
+
+  private persistMailbox() {
+    const path = resolve(
+      this.config.get<string>('DEMO_OTP_FILE') || '.local/demo-otps.json',
+    );
+    this.mailboxWrite = this.mailboxWrite
+      .catch(() => {})
+      .then(async () => {
+        const codes = [...this.otpStore]
+          .filter(
+            ([, item]) => item.expiresAt > Date.now() && item.attempts < 3,
+          )
+          .map(([phone, item]) => ({
+            phone,
+            code: item.code,
+            expiresAt: new Date(item.expiresAt).toISOString(),
+          }));
+        await mkdir(dirname(path), { recursive: true });
+        await writeFile(
+          path + '.tmp',
+          JSON.stringify(
+            { updatedAt: new Date().toISOString(), codes },
+            null,
+            2,
+          ) + '\n',
+          { mode: 0o600 },
+        );
+        await rename(path + '.tmp', path);
+      });
+    return this.mailboxWrite;
   }
 
   async verifyOtp(phone: string, code: string) {
@@ -57,9 +91,12 @@ export class OtpService {
         message: 'Too many attempts. Request a fresh code.',
       };
     record.attempts++;
-    if (record.code !== code)
+    if (record.code !== code) {
+      await this.persistMailbox();
       return { success: false, message: 'Invalid code.' };
+    }
     this.otpStore.delete(phone);
+    await this.persistMailbox();
     return { success: true, message: 'Phone verified.' };
   }
 }

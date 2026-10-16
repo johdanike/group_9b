@@ -10,7 +10,6 @@ export default function Auth({ register = false }) {
   const [area, setArea] = useState('Yaba');
   const [otp, setOtp] = useState('');
   const [sent, setSent] = useState(false);
-  const [demoCode, setDemoCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [consent, setConsent] = useState(false);
@@ -32,11 +31,10 @@ export default function Auth({ register = false }) {
           throw new Error(
             'Enter your name and acknowledge the local demo notice.',
           );
-        const data = await api('/auth/send-otp', {
+        await api('/auth/send-otp', {
           method: 'POST',
           body: { phone: normalized },
         });
-        setDemoCode(data.demoOtp || '');
         setSent(true);
       } else {
         const result = await api('/auth/verify-otp', {
@@ -78,7 +76,7 @@ export default function Auth({ register = false }) {
     <section className="bg-primary-soft py-14 sm:py-20">
       <div className="container-app max-w-lg">
         <p className="text-sm font-bold text-primary-dark">
-          E don happen · Lagos pilot
+          E don happen Â· Lagos pilot
         </p>
         <h1 className="mt-3 text-4xl font-extrabold">
           {register ? 'Join your neighbourhood' : 'Welcome back'}
@@ -170,13 +168,10 @@ export default function Auth({ register = false }) {
           )}
           {sent && (
             <>
-              <div className="rounded-xl bg-primary-soft p-4 text-sm">
-                <strong>Local demo only</strong>
-                <p className="mt-1">
-                  No SMS was sent. Your demonstration code is{' '}
-                  <b className="tracking-widest">{demoCode}</b>.
-                </p>
-              </div>
+              <p className="rounded-xl bg-primary-soft p-4 text-sm">
+                Verification requested. Ask the demo host for your six-digit
+                code.
+              </p>
               <label className="block text-sm font-semibold">
                 Six-digit code
                 <input
@@ -202,7 +197,7 @@ export default function Auth({ register = false }) {
           )}
           <button className="btn-primary w-full" disabled={busy}>
             {busy
-              ? 'Please wait…'
+              ? 'Please waitâ€¦'
               : sent
                 ? 'Verify and continue'
                 : 'Get verification code'}

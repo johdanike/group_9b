@@ -2,7 +2,8 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import pg from 'pg';
-import { writeFile } from 'node:fs/promises';
+import { writeFile, readFile, unlink } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { randomInt } from 'node:crypto';
 
 if (
@@ -19,6 +20,7 @@ const db = new pg.Client({
   database: process.env.DB_NAME,
 });
 const users = [];
+const otpFile = resolve('.local/test-otps.json');
 let backend;
 let serverLog = '';
 async function call(path, { token, method = 'GET', body } = {}) {
@@ -40,9 +42,19 @@ async function login() {
     body: { phone },
   });
   assert.equal(sent.status, 200);
+  assert.equal(
+    sent.data.demoOtp,
+    undefined,
+    'Codes must not be returned to browsers',
+  );
   const result = await call('/auth/verify-otp', {
     method: 'POST',
-    body: { phone, otp: sent.data.demoOtp },
+    body: {
+      phone,
+      otp: JSON.parse(await readFile(otpFile, 'utf8')).codes.find(
+        (item) => item.phone === phone,
+      ).code,
+    },
   });
   assert.equal(result.status, 200);
   users.push(result.data.user.id);
@@ -51,7 +63,12 @@ async function login() {
 before(async () => {
   await db.connect();
   backend = spawn(process.execPath, ['backend/dist/main.js'], {
-    env: { ...process.env, PORT: '3100' },
+    env: {
+      ...process.env,
+      PORT: '3100',
+      DEMO_OTP_FILE: otpFile,
+      WEB_PUSH_WORKER: 'false',
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   backend.stdout.on('data', (chunk) => {
@@ -101,6 +118,7 @@ after(async () => {
     await db.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [users]);
   }
   await db.end();
+  await unlink(otpFile).catch(() => {});
 });
 
 test('frontend-facing API journey and trust boundaries', async (t) => {
@@ -198,7 +216,11 @@ test('frontend-facing API journey and trust boundaries', async (t) => {
       assert.equal(created.status, 201);
       report = created.data;
       assert.equal(report.state, 'unverified');
-    assert.ok(Math.abs(new Date(report.observedAt) - new Date(report.submittedAt)) < 5000, 'Observation and submission timestamps must share the same timezone semantics');
+      assert.ok(
+        Math.abs(new Date(report.observedAt) - new Date(report.submittedAt)) <
+          5000,
+        'Observation and submission timestamps must share the same timezone semantics',
+      );
       assert.equal((await call(`/reports/${report.id}`)).data.id, report.id);
       assert.equal(report.reporter.phone, undefined);
       assert.equal(report.reporter.metadata, undefined);
