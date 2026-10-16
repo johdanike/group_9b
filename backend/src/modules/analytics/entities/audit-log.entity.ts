@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('audit_logs')
 export class AuditLog {
@@ -14,7 +21,7 @@ export class AuditLog {
   @Column({ type: 'uuid', name: 'target_id', nullable: true })
   targetId: string;
 
-  @CreateDateColumn({ name: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'timestamp' })
   timestamp: Date;
 
   @Column({ type: 'varchar', length: 50 })

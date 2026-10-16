@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('sos_requests')
 export class SOSRequest {
@@ -22,7 +30,7 @@ export class SOSRequest {
   @Column({ type: 'jsonb', name: 'sharing_policy', nullable: true })
   sharingPolicy: any;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
   @Column({ type: 'varchar', length: 50, default: 'active' })

@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('communities')
 export class Community {
@@ -25,10 +33,14 @@ export class Community {
   @Column({ type: 'varchar', length: 50, default: 'standard' })
   plan: string;
 
-  @Column({ type: 'jsonb', name: 'responder_coverage_configuration', nullable: true })
+  @Column({
+    type: 'jsonb',
+    name: 'responder_coverage_configuration',
+    nullable: true,
+  })
   responderCoverageConfiguration: any;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
   @ManyToOne('User')

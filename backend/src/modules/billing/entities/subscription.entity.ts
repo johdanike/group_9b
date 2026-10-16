@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('subscriptions')
 export class Subscription {
@@ -14,13 +21,18 @@ export class Subscription {
   @Column({ type: 'varchar', length: 20, default: 'active' })
   status: string;
 
-  @Column({ type: 'timestamp', name: 'renewal_date' })
+  @Column({ type: 'timestamptz', name: 'renewal_date' })
   renewalDate: Date;
 
-  @Column({ type: 'varchar', length: 100, name: 'billing_reference', nullable: true })
+  @Column({
+    type: 'varchar',
+    length: 100,
+    name: 'billing_reference',
+    nullable: true,
+  })
   billingReference: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
   @ManyToOne('Community', 'subscriptions')
