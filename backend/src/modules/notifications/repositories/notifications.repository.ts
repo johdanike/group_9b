@@ -3,7 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, MoreThanOrEqual, In } from 'typeorm';
 import { NotificationSubscription } from '../entities/notification-subscription.entity.js';
 import { NotificationDelivery } from '../entities/notification-delivery.entity.js';
-import { DeliveryState, DeliveryChannel, NotificationDeliveryFilterDto } from '../dto/notification-delivery.dto.js';
+import {
+  DeliveryState,
+  DeliveryChannel,
+  NotificationDeliveryFilterDto,
+} from '../dto/notification-delivery.dto.js';
 
 @Injectable()
 export class NotificationsRepository {
@@ -15,16 +19,26 @@ export class NotificationsRepository {
   ) {}
 
   // Subscription methods
-  async findSubscriptionsByUser(userId: string): Promise<NotificationSubscription[]> {
+  async findSubscriptionsByUser(
+    userId: string,
+  ): Promise<NotificationSubscription[]> {
     return this.subscriptionRepo.find({ where: { userId } });
   }
 
-  async findSubscription(userId: string, category: string): Promise<NotificationSubscription | null> {
+  async findSubscription(
+    userId: string,
+    category: string,
+  ): Promise<NotificationSubscription | null> {
     return this.subscriptionRepo.findOne({ where: { userId, category } });
   }
 
-  async upsertSubscription(subscription: Partial<NotificationSubscription>): Promise<NotificationSubscription> {
-    const existing = await this.findSubscription(subscription.userId!, subscription.category!);
+  async upsertSubscription(
+    subscription: Partial<NotificationSubscription>,
+  ): Promise<NotificationSubscription> {
+    const existing = await this.findSubscription(
+      subscription.userId!,
+      subscription.category!,
+    );
     if (existing) {
       Object.assign(existing, subscription);
       return this.subscriptionRepo.save(existing);
@@ -46,16 +60,20 @@ export class NotificationsRepository {
     // Find subscriptions for this category with radius covering the location
     // and priority threshold <= notification priority
     const priorityOrder = { low: 0, normal: 1, high: 2, critical: 3 };
-    const notificationPriority = priorityOrder[priority as keyof typeof priorityOrder] ?? 1;
+    const notificationPriority =
+      priorityOrder[priority as keyof typeof priorityOrder] ?? 1;
 
     const subscriptions = await this.subscriptionRepo
       .createQueryBuilder('sub')
       .where('sub.category = :category', { category })
-      .andWhere(`ST_DWithin(
+      .andWhere(
+        `ST_DWithin(
         ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
-        ST_SetSRID(ST_MakePoint(0, 0), 4326)::geography,
+        ST_SetSRID(ST_MakePoint(sub.longitude, sub.latitude), 4326)::geography,
         sub.area_or_radius * 1000
-      )`, { latitude, longitude })
+      )`,
+        { latitude, longitude },
+      )
       .andWhere(
         `CASE sub.priority_threshold
           WHEN 'low' THEN 0
@@ -86,7 +104,15 @@ export class NotificationsRepository {
 
     // Check days if specified
     if (quietHours.days?.length) {
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayNames = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
       const today = dayNames[now.getDay()];
       if (!quietHours.days.includes(today)) return false;
     }
@@ -100,7 +126,9 @@ export class NotificationsRepository {
   }
 
   // Delivery methods
-  async createDelivery(delivery: Partial<NotificationDelivery>): Promise<NotificationDelivery> {
+  async createDelivery(
+    delivery: Partial<NotificationDelivery>,
+  ): Promise<NotificationDelivery> {
     const newDelivery = this.deliveryRepo.create(delivery);
     return this.deliveryRepo.save(newDelivery);
   }
@@ -109,12 +137,17 @@ export class NotificationsRepository {
     return this.deliveryRepo.findOne({ where: { id } });
   }
 
-  async updateDelivery(id: string, updates: Partial<NotificationDelivery>): Promise<NotificationDelivery | null> {
+  async updateDelivery(
+    id: string,
+    updates: Partial<NotificationDelivery>,
+  ): Promise<NotificationDelivery | null> {
     await this.deliveryRepo.update(id, updates);
     return this.findDelivery(id);
   }
 
-  async findDeliveriesByIncident(incidentId: string): Promise<NotificationDelivery[]> {
+  async findDeliveriesByIncident(
+    incidentId: string,
+  ): Promise<NotificationDelivery[]> {
     return this.deliveryRepo.find({ where: { incidentIdOrSosId: incidentId } });
   }
 
@@ -126,8 +159,13 @@ export class NotificationsRepository {
     });
   }
 
-  async findDeliveriesByRecipient(recipientId: string): Promise<NotificationDelivery[]> {
-    return this.deliveryRepo.find({ where: { recipientId }, order: { createdAt: 'DESC' } });
+  async findDeliveriesByRecipient(
+    recipientId: string,
+  ): Promise<NotificationDelivery[]> {
+    return this.deliveryRepo.find({
+      where: { recipientId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async countRecentDeliveries(
@@ -147,24 +185,40 @@ export class NotificationsRepository {
     });
   }
 
-  async getDeliveryStats(filters: { channel?: DeliveryChannel; deliveryState?: DeliveryState; since?: Date }) {
-    const qb = this.deliveryRepo.createQueryBuilder('d').select('d.deliveryState', 'state').addSelect('COUNT(*)', 'count');
-    if (filters.channel) qb.andWhere('d.channel = :channel', { channel: filters.channel });
-    if (filters.deliveryState) qb.andWhere('d.deliveryState = :state', { state: filters.deliveryState });
-    if (filters.since) qb.andWhere('d.createdAt >= :since', { since: filters.since });
+  async getDeliveryStats(filters: {
+    channel?: DeliveryChannel;
+    deliveryState?: DeliveryState;
+    since?: Date;
+  }) {
+    const qb = this.deliveryRepo
+      .createQueryBuilder('d')
+      .select('d.deliveryState', 'state')
+      .addSelect('COUNT(*)', 'count');
+    if (filters.channel)
+      qb.andWhere('d.channel = :channel', { channel: filters.channel });
+    if (filters.deliveryState)
+      qb.andWhere('d.deliveryState = :state', { state: filters.deliveryState });
+    if (filters.since)
+      qb.andWhere('d.createdAt >= :since', { since: filters.since });
     qb.groupBy('d.deliveryState');
     const raw = await qb.getRawMany();
     return raw.reduce((acc, r) => ({ ...acc, [r.state]: Number(r.count) }), {});
   }
 
   async findFailedDeliveries(): Promise<NotificationDelivery[]> {
-    return this.deliveryRepo.find({ where: { deliveryState: DeliveryState.FAILED } });
+    return this.deliveryRepo.find({
+      where: { deliveryState: DeliveryState.FAILED },
+    });
   }
 
-  async filterDeliveries(filters: NotificationDeliveryFilterDto): Promise<NotificationDelivery[]> {
+  async filterDeliveries(
+    filters: NotificationDeliveryFilterDto,
+  ): Promise<NotificationDelivery[]> {
     return this.deliveryRepo.find({
       where: {
-        ...(filters.incidentIdOrSosId && { incidentIdOrSosId: filters.incidentIdOrSosId }),
+        ...(filters.incidentIdOrSosId && {
+          incidentIdOrSosId: filters.incidentIdOrSosId,
+        }),
         ...(filters.recipientId && { recipientId: filters.recipientId }),
         ...(filters.channel && { channel: filters.channel }),
         ...(filters.deliveryState && { deliveryState: filters.deliveryState }),

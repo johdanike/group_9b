@@ -1,118 +1,218 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Report } from '../entities/report.entity.js';
-import { EvidenceAsset } from '../entities/evidence-asset.entity.js';
-import { User } from '../../identity/entities/user.entity.js';
+import { Confirmation } from '../../incidents/entities/confirmation.entity.js';
 import { ReportsRepository } from '../repositories/reports.repository.js';
-import { CreateReportDto, UpdateReportDto, ConfirmationDto } from '../dto/create-report.dto.js';
-import { ReportCategory, ReportState, LocationPrecision } from '../interfaces/report.interface.js';
+import {
+  CreateReportDto,
+  UpdateReportDto,
+  ConfirmationDto,
+} from '../dto/create-report.dto.js';
+import { ReportState } from '../interfaces/report.interface.js';
+import type { FeedQueryParams } from '../interfaces/report.interface.js';
+import { NotificationsService } from '../../notifications/notifications.service.js';
 
 @Injectable()
 export class ReportsService {
   constructor(
-    @InjectRepository(Report)
-    private readonly reportRepository: Repository<Report>,
-    @InjectRepository(EvidenceAsset)
-    private readonly evidenceAssetRepository: Repository<EvidenceAsset>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    private readonly reportsRepository: ReportsRepository,
+    @InjectRepository(Report) private readonly reports: Repository<Report>,
+    private readonly repository: ReportsRepository,
+    private readonly db: DataSource,
+    private readonly notifications: NotificationsService,
   ) {}
 
-  async createReport(userId: string, createReportDto: CreateReportDto): Promise<Report> {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const [longitude, latitude] = [createReportDto.location.longitude, createReportDto.location.latitude];
-    
-    const report = this.reportRepository.create({
-      reporterId: userId,
-      category: createReportDto.category,
-      description: createReportDto.description,
-      observedAt: createReportDto.observedAt ? new Date(createReportDto.observedAt) : new Date(),
-      coordinatesOrArea: `POINT(${longitude} ${latitude})`,
-      locationPrecision: createReportDto.location.radius ? LocationPrecision.APPROXIMATE : LocationPrecision.EXACT,
-      evidenceReferences: createReportDto.evidenceReferences || [],
-      state: ReportState.UNVERIFIED,
+  async createReport(userId: string, dto: CreateReportDto) {
+    if (dto.description.trim().length < 10)
+      throw new BadRequestException(
+        'Description needs at least 10 non-padding characters.',
+      );
+    if (dto.evidenceReferences?.length)
+      throw new BadRequestException(
+        'Evidence uploads are not enabled in the local demo.',
+      );
+    const observedAt = dto.observedAt ? new Date(dto.observedAt) : new Date();
+    if (observedAt.getTime() > Date.now() + 60000)
+      throw new BadRequestException('Observed time cannot be in the future.');
+    const report = await this.db.transaction(async (manager) => {
+      const report = await manager.save(
+        Report,
+        manager.create(Report, {
+          reporterId: userId,
+          category: dto.category,
+          description: dto.description.trim(),
+          observedAt,
+          coordinatesOrArea: {
+            type: 'Point',
+            coordinates: [dto.location.longitude, dto.location.latitude],
+          },
+          locationPrecision: 'approximate',
+          evidenceReferences: [],
+          metadata: { areaName: dto.location.areaName || 'Selected area' },
+          state: ReportState.UNVERIFIED,
+        }),
+      );
+      await this.notifications.notifyReport(report, manager);
+      return report;
     });
-
-    return this.reportRepository.save(report);
+    return this.getReport(report.id);
   }
 
-  async getReport(id: string): Promise<Report> {
-    const report = await this.reportsRepository.findById(id);
-    if (!report) {
+  async getReport(id: string) {
+    const report = await this.repository.findById(id);
+    if (!report || report.state === ReportState.REMOVED)
       throw new NotFoundException('Report not found');
-    }
-    return report;
+    return this.present(report);
   }
 
-  async getFeed(params: {
-    latitude?: number;
-    longitude?: number;
-    radius?: number;
-    category?: ReportCategory;
-    state?: ReportState;
-    limit?: number;
-    offset?: number;
-    since?: string;
-  }): Promise<Report[]> {
-    return this.reportsRepository.findForFeed(params);
+  async getFeed(params: FeedQueryParams) {
+    if ((params.latitude === undefined) !== (params.longitude === undefined))
+      throw new BadRequestException(
+        'Latitude and longitude must be supplied together.',
+      );
+    return Promise.all(
+      (await this.repository.findForFeed(params)).map((report) =>
+        this.present(report),
+      ),
+    );
   }
 
-  async updateReport(userId: string, id: string, updateReportDto: UpdateReportDto): Promise<Report> {
-    const report = await this.getReport(id);
-    
-    if (report.reporterId !== userId) {
-      throw new BadRequestException('You can only update your own reports');
-    }
-
-    if (updateReportDto.location) {
-      const [longitude, latitude] = [updateReportDto.location.longitude, updateReportDto.location.latitude];
-      report.coordinatesOrArea = `POINT(${longitude} ${latitude})`;
-      report.locationPrecision = updateReportDto.location.radius ? LocationPrecision.APPROXIMATE : LocationPrecision.EXACT;
-    }
-
-    if (updateReportDto.category) report.category = updateReportDto.category;
-    if (updateReportDto.description) report.description = updateReportDto.description;
-    if (updateReportDto.observedAt) report.observedAt = new Date(updateReportDto.observedAt);
-    if (updateReportDto.evidenceReferences) report.evidenceReferences = updateReportDto.evidenceReferences;
-
-    return this.reportRepository.save(report);
+  private async present(report: Report) {
+    const verifiedReports = await this.reports.count({
+      where: { reporterId: report.reporterId, state: ReportState.VERIFIED },
+    });
+    return {
+      id: report.id,
+      category: report.category,
+      description: report.description,
+      reporterId: report.reporterId,
+      observedAt: report.observedAt,
+      submittedAt: report.submittedAt,
+      areaName: report.metadata?.areaName || 'Lagos',
+      locationPrecision: report.locationPrecision,
+      coordinates: {
+        type: 'Point',
+        coordinates: report.coordinatesOrArea.coordinates.map(
+          (n) => Math.round(n * 100) / 100,
+        ),
+      },
+      state: report.state,
+      confirmationsCount: report.confirmationsCount,
+      disputesCount: report.disputesCount,
+      reporter: {
+        id: report.reporterId,
+        displayName: report.reporter?.displayName || 'Resident',
+        verifiedReports,
+        trustedContributor: verifiedReports >= 10,
+      },
+    };
   }
 
-  async addConfirmation(userId: string, confirmationDto: ConfirmationDto): Promise<Report> {
-    const report = await this.getReport(confirmationDto.reportId);
-    
-    if (confirmationDto.action === 'confirm') {
-      await this.reportsRepository.incrementConfirmations(confirmationDto.reportId);
-      report.confirmationsCount = (report.confirmationsCount || 0) + 1;
-      
-      if (report.confirmationsCount >= 2 && report.state === ReportState.UNVERIFIED) {
-        report.state = ReportState.CORROBORATED;
+  async updateReport(userId: string, id: string, dto: UpdateReportDto) {
+    const report = await this.reports.findOneBy({ id });
+    if (!report) throw new NotFoundException('Report not found');
+    if (report.reporterId !== userId)
+      throw new ForbiddenException('You can only update your own reports');
+    if (report.state !== ReportState.UNVERIFIED)
+      throw new BadRequestException(
+        'Reviewed reports cannot be edited. Submit an update as a new report.',
+      );
+    if (dto.description && dto.description.trim().length < 10)
+      throw new BadRequestException(
+        'Description needs at least 10 non-padding characters.',
+      );
+    if (dto.evidenceReferences?.length)
+      throw new BadRequestException(
+        'Evidence uploads are not enabled in the local demo.',
+      );
+    if (dto.description) report.description = dto.description.trim();
+    if (dto.category) report.category = dto.category;
+    if (dto.location) {
+      report.coordinatesOrArea = {
+        type: 'Point',
+        coordinates: [dto.location.longitude, dto.location.latitude],
+      };
+      report.metadata = {
+        ...report.metadata,
+        areaName: dto.location.areaName || 'Selected area',
+      };
+    }
+    if (dto.observedAt) {
+      if (new Date(dto.observedAt).getTime() > Date.now() + 60000)
+        throw new BadRequestException('Observed time cannot be in the future.');
+      report.observedAt = new Date(dto.observedAt);
+    }
+    await this.reports.save(report);
+    return this.getReport(id);
+  }
+
+  async addConfirmation(userId: string, dto: ConfirmationDto) {
+    if (dto.action === 'confirm' && dto.firsthand !== true)
+      throw new BadRequestException(
+        'Confirm only what you witnessed firsthand.',
+      );
+    await this.db.transaction(async (manager) => {
+      const report = await manager.findOne(Report, {
+        where: { id: dto.reportId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!report) throw new NotFoundException('Report not found');
+      if (report.reporterId === userId)
+        throw new ForbiddenException('You cannot vote on your own report.');
+      if (
+        [ReportState.REMOVED, ReportState.RESOLVED, ReportState.STALE].includes(
+          report.state as ReportState,
+        )
+      )
+        throw new BadRequestException('This report is closed for voting.');
+      const key = { userId, reportIdOrIncidentId: dto.reportId };
+      const existing = await manager.findOneBy(Confirmation, key);
+      if (existing) {
+        existing.confirmationOrDispute = dto.action;
+        existing.firsthandFlag = dto.firsthand || false;
+        await manager.save(existing);
+      } else {
+        await manager.save(
+          Confirmation,
+          manager.create(Confirmation, {
+            ...key,
+            confirmationOrDispute: dto.action,
+            firsthandFlag: dto.firsthand || false,
+          }),
+        );
       }
-    } else {
-      await this.reportsRepository.incrementDisputes(confirmationDto.reportId);
-      report.disputesCount = (report.disputesCount || 0) + 1;
-      
-      if (report.disputesCount >= 1 && report.state === ReportState.UNVERIFIED) {
-        report.state = ReportState.DISPUTED;
+      report.confirmationsCount = await manager.countBy(Confirmation, {
+        reportIdOrIncidentId: report.id,
+        confirmationOrDispute: 'confirm',
+      });
+      report.disputesCount = await manager.countBy(Confirmation, {
+        reportIdOrIncidentId: report.id,
+        confirmationOrDispute: 'dispute',
+      });
+      // Votes indicate community confidence; only moderators can verify a report.
+      if (report.state !== ReportState.VERIFIED) {
+        report.state =
+          report.disputesCount > 0
+            ? ReportState.DISPUTED
+            : report.confirmationsCount >= 2
+              ? ReportState.CORROBORATED
+              : ReportState.UNVERIFIED;
       }
-    }
-
-    return this.reportRepository.save(report);
+      await manager.save(report);
+    });
+    return this.getReport(dto.reportId);
   }
 
-  async deleteReport(userId: string, id: string): Promise<void> {
-    const report = await this.getReport(id);
-    
-    if (report.reporterId !== userId) {
-      throw new BadRequestException('You can only delete your own reports');
-    }
-
-    await this.reportRepository.remove(report);
+  async deleteReport(userId: string, id: string) {
+    const report = await this.reports.findOneBy({ id });
+    if (!report) throw new NotFoundException('Report not found');
+    if (report.reporterId !== userId)
+      throw new ForbiddenException('You can only delete your own reports');
+    await this.reports.update(id, { state: ReportState.REMOVED });
   }
 }

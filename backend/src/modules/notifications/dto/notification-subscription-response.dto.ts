@@ -9,6 +9,12 @@ export class NotificationSubscriptionResponseDto {
   category: string;
 
   @ApiProperty()
+  latitude: number;
+
+  @ApiProperty()
+  longitude: number;
+
+  @ApiProperty()
   areaOrRadius: number;
 
   @ApiProperty({ enum: ['low', 'normal', 'high', 'critical'] })
@@ -25,6 +31,8 @@ export class NotificationSubscriptionResponseDto {
     this.userId = subscription.userId;
     this.category = subscription.category;
     this.areaOrRadius = subscription.areaOrRadius;
+    this.latitude = subscription.latitude;
+    this.longitude = subscription.longitude;
     this.priorityThreshold = subscription.priorityThreshold;
     this.quietHours = subscription.quietHours;
   }

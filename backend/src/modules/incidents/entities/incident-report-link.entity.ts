@@ -1,4 +1,11 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('incident_report_links')
 export class IncidentReportLink {
@@ -14,7 +21,7 @@ export class IncidentReportLink {
   @Column({ type: 'uuid', name: 'linked_by' })
   linkedBy: string;
 
-  @CreateDateColumn({ name: 'linked_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'linked_at' })
   linkedAt: Date;
 
   @ManyToOne('Incident', 'reportLinks')

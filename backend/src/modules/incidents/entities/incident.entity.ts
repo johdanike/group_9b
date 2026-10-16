@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 
 @Entity('incidents')
 export class Incident {
@@ -19,16 +26,21 @@ export class Incident {
   })
   canonicalLocation: string;
 
-  @CreateDateColumn({ name: 'first_seen_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'first_seen_at' })
   firstSeenAt: Date;
 
-  @UpdateDateColumn({ name: 'last_updated_at' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'last_updated_at' })
   lastUpdatedAt: Date;
 
   @Column({ type: 'varchar', length: 50, default: 'Open' })
   status: string;
 
-  @Column({ type: 'varchar', length: 50, name: 'verification_state', default: 'Unverified' })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    name: 'verification_state',
+    default: 'Unverified',
+  })
   verificationState: string;
 
   @Column({ type: 'varchar', length: 20, default: 'Medium' })

@@ -1,4 +1,11 @@
-import { IsEnum, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum ModerationActionType {
@@ -30,14 +37,14 @@ export enum AppealStatus {
 }
 
 export enum ReportState {
-  UNVERIFIED = 'Unverified',
-  UNDER_REVIEW = 'Under Review',
-  CORROBORATED = 'Corroborated',
-  VERIFIED = 'Verified',
-  DISPUTED = 'Disputed',
-  STALE = 'Stale',
-  RESOLVED = 'Resolved',
-  REMOVED = 'Removed',
+  UNVERIFIED = 'unverified',
+  UNDER_REVIEW = 'under_review',
+  CORROBORATED = 'corroborated',
+  VERIFIED = 'verified',
+  DISPUTED = 'disputed',
+  STALE = 'stale',
+  RESOLVED = 'resolved',
+  REMOVED = 'removed',
 }
 
 export class CreateModerationActionDto {
@@ -59,12 +66,16 @@ export class CreateModerationActionDto {
   @MaxLength(1000)
   reason: string;
 
-  @ApiPropertyOptional({ description: 'New state for the target (e.g., Verified, Removed)' })
+  @ApiPropertyOptional({
+    description: 'New state for the target (e.g., Verified, Removed)',
+  })
   @IsOptional()
   @IsString()
   newState?: string;
 
-  @ApiPropertyOptional({ description: 'Related entity ID (e.g., incident ID for merged reports)' })
+  @ApiPropertyOptional({
+    description: 'Related entity ID (e.g., incident ID for merged reports)',
+  })
   @IsOptional()
   @IsUUID()
   relatedId?: string;

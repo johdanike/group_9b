@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, LessThan, MoreThan, In } from 'typeorm';
 import { Report } from '../entities/report.entity.js';
-import { ReportCategory, ReportState, LocationPrecision, FeedQueryParams } from '../interfaces/report.interface.js';
+import type { FeedQueryParams } from '../interfaces/report.interface.js';
+import {
+  ReportCategory,
+  ReportState,
+  LocationPrecision,
+} from '../interfaces/report.interface.js';
 
 @Injectable()
 export class ReportsRepository {
@@ -19,28 +24,41 @@ export class ReportsRepository {
   async findById(id: string): Promise<Report | null> {
     return this.reportRepository.findOne({
       where: { id },
-      relations: ['reporter', 'evidenceAssets'],
+      relations: ['reporter'],
+      select: { reporter: { id: true, displayName: true } },
     });
   }
 
   async findForFeed(params: FeedQueryParams): Promise<Report[]> {
     const query = this.reportRepository
       .createQueryBuilder('report')
-      .leftJoinAndSelect('report.reporter', 'reporter')
-      .leftJoinAndSelect('report.evidenceAssets', 'evidenceAssets')
+      .leftJoin('report.reporter', 'reporter')
+      .addSelect(['reporter.id', 'reporter.displayName'])
       .where('report.state IN (:...states)', {
-        states: [ReportState.UNVERIFIED, ReportState.CORROBORATED, ReportState.VERIFIED, ReportState.DISPUTED, ReportState.RESOLVED],
+        states: [
+          ReportState.UNVERIFIED,
+          ReportState.CORROBORATED,
+          ReportState.VERIFIED,
+          ReportState.DISPUTED,
+          ReportState.RESOLVED,
+        ],
       });
 
-    if (params.latitude && params.longitude && params.radius) {
+    if (
+      params.latitude !== undefined &&
+      params.longitude !== undefined &&
+      params.radius !== undefined
+    ) {
       query.andWhere(
-        `ST_DWithin(report.coordinates_or_area, ST_MakePoint(:lon, :lat)::geography, :radius)`,
+        `ST_DWithin(report.coordinates_or_area::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, :radius)`,
         { lat: params.latitude, lon: params.longitude, radius: params.radius },
       );
     }
 
     if (params.category) {
-      query.andWhere('report.category = :category', { category: params.category });
+      query.andWhere('report.category = :category', {
+        category: params.category,
+      });
     }
 
     if (params.state) {
@@ -48,10 +66,13 @@ export class ReportsRepository {
     }
 
     if (params.since) {
-      query.andWhere('report.submitted_at > :since', { since: new Date(params.since) });
+      query.andWhere('report.submitted_at > :since', {
+        since: new Date(params.since),
+      });
     }
 
-    query.orderBy('report.submitted_at', 'DESC')
+    query
+      .orderBy('report.submittedAt', 'DESC')
       .take(params.limit || 20)
       .skip(params.offset || 0);
 
@@ -62,18 +83,27 @@ export class ReportsRepository {
     await this.reportRepository.update(id, { state });
   }
 
-  async findDuplicates(category: ReportCategory, latitude: number, longitude: number, radiusKm: number): Promise<Report[]> {
+  async findDuplicates(
+    category: ReportCategory,
+    latitude: number,
+    longitude: number,
+    radiusKm: number,
+  ): Promise<Report[]> {
     return this.reportRepository
       .createQueryBuilder('report')
       .where('report.category = :category', { category })
       .andWhere(
-        `ST_DWithin(report.coordinates_or_area, ST_MakePoint(:lon, :lat)::geography, :radius)`,
+        `ST_DWithin(report.coordinates_or_area::geography, ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography, :radius)`,
         { lat: latitude, lon: longitude, radius: radiusKm * 1000 },
       )
       .andWhere('report.state IN (:...states)', {
-        states: [ReportState.UNVERIFIED, ReportState.CORROBORATED, ReportState.VERIFIED],
+        states: [
+          ReportState.UNVERIFIED,
+          ReportState.CORROBORATED,
+          ReportState.VERIFIED,
+        ],
       })
-      .orderBy('report.submitted_at', 'DESC')
+      .orderBy('report.submittedAt', 'DESC')
       .take(10)
       .getMany();
   }

@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('reports')
 export class Report {
@@ -14,10 +22,10 @@ export class Report {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'timestamp', name: 'observed_at' })
+  @Column({ type: 'timestamptz', name: 'observed_at' })
   observedAt: Date;
 
-  @CreateDateColumn({ name: 'submitted_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'submitted_at' })
   submittedAt: Date;
 
   @Column({
@@ -26,13 +34,16 @@ export class Report {
     srid: 4326,
     name: 'coordinates_or_area',
   })
-  coordinatesOrArea: string;
+  coordinatesOrArea: { type: 'Point'; coordinates: [number, number] };
 
   @Column({ type: 'varchar', length: 50, name: 'location_precision' })
   locationPrecision: string;
 
-  @Column({ type: 'varchar', length: 50, default: 'Unverified' })
+  @Column({ type: 'varchar', length: 50, default: 'unverified' })
   state: string;
+
+  @Column({ type: 'jsonb', name: 'evidence_references', nullable: true })
+  evidenceReferences: string[];
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: any;

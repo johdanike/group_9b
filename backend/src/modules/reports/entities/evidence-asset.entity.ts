@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('evidence_assets')
 export class EvidenceAsset {
@@ -14,10 +21,15 @@ export class EvidenceAsset {
   @Column({ type: 'jsonb', name: 'media_metadata', nullable: true })
   mediaMetadata: any;
 
-  @Column({ type: 'varchar', length: 50, name: 'moderation_state', default: 'pending' })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    name: 'moderation_state',
+    default: 'pending',
+  })
   moderationState: string;
 
-  @Column({ type: 'timestamp', name: 'retention_deadline', nullable: true })
+  @Column({ type: 'timestamptz', name: 'retention_deadline', nullable: true })
   retentionDeadline: Date;
 
   @ManyToOne('Report')

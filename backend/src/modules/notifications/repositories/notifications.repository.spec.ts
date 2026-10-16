@@ -4,7 +4,11 @@ import { Repository, QueryBuilder } from 'typeorm';
 import { NotificationsRepository } from './notifications.repository.js';
 import { NotificationSubscription } from '../entities/notification-subscription.entity.js';
 import { NotificationDelivery } from '../entities/notification-delivery.entity.js';
-import { DeliveryChannel, DeliveryState, NotificationDeliveryFilterDto } from '../dto/notification-delivery.dto.js';
+import {
+  DeliveryChannel,
+  DeliveryState,
+  NotificationDeliveryFilterDto,
+} from '../dto/notification-delivery.dto.js';
 
 describe('NotificationsRepository', () => {
   let repository: NotificationsRepository;
@@ -56,8 +60,14 @@ describe('NotificationsRepository', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationsRepository,
-        { provide: getRepositoryToken(NotificationSubscription), useValue: subscriptionRepo },
-        { provide: getRepositoryToken(NotificationDelivery), useValue: deliveryRepo },
+        {
+          provide: getRepositoryToken(NotificationSubscription),
+          useValue: subscriptionRepo,
+        },
+        {
+          provide: getRepositoryToken(NotificationDelivery),
+          useValue: deliveryRepo,
+        },
       ],
     }).compile();
 
@@ -74,11 +84,15 @@ describe('NotificationsRepository', () => {
         { userId: mockUserId, category: 'flooding' },
         { userId: mockUserId, category: 'traffic' },
       ];
-      (subscriptionRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(mockSubscriptions as any);
+      (subscriptionRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockSubscriptions as any,
+      );
 
       const result = await repository.findSubscriptionsByUser(mockUserId);
 
-      expect(subscriptionRepo.find).toHaveBeenCalledWith({ where: { userId: mockUserId } });
+      expect(subscriptionRepo.find).toHaveBeenCalledWith({
+        where: { userId: mockUserId },
+      });
       expect(result).toHaveLength(2);
     });
   });
@@ -86,18 +100,30 @@ describe('NotificationsRepository', () => {
   describe('findSubscription', () => {
     it('should return subscription when found', async () => {
       const mockSubscription = { userId: mockUserId, category: mockCategory };
-      (subscriptionRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(mockSubscription as any);
+      (subscriptionRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockSubscription as any,
+      );
 
-      const result = await repository.findSubscription(mockUserId, mockCategory);
+      const result = await repository.findSubscription(
+        mockUserId,
+        mockCategory,
+      );
 
-      expect(subscriptionRepo.findOne).toHaveBeenCalledWith({ where: { userId: mockUserId, category: mockCategory } });
+      expect(subscriptionRepo.findOne).toHaveBeenCalledWith({
+        where: { userId: mockUserId, category: mockCategory },
+      });
       expect(result).toEqual(mockSubscription);
     });
 
     it('should return null when not found', async () => {
-      (subscriptionRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+      (subscriptionRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(
+        null,
+      );
 
-      const result = await repository.findSubscription(mockUserId, 'nonexistent');
+      const result = await repository.findSubscription(
+        mockUserId,
+        'nonexistent',
+      );
 
       expect(result).toBeNull();
     });
@@ -105,52 +131,106 @@ describe('NotificationsRepository', () => {
 
   describe('upsertSubscription', () => {
     it('should update existing subscription', async () => {
-      const existing = { userId: mockUserId, category: mockCategory, areaOrRadius: 5 };
+      const existing = {
+        userId: mockUserId,
+        category: mockCategory,
+        areaOrRadius: 5,
+      };
       const updated = { ...existing, areaOrRadius: 10 };
-      (repository.findSubscription as ReturnType<typeof vi.fn>).mockResolvedValue(existing as any);
-      (subscriptionRepo.save as ReturnType<typeof vi.fn>).mockResolvedValue(updated as any);
+      vi.spyOn(repository, 'findSubscription').mockResolvedValue(
+        existing as any,
+      );
+      (subscriptionRepo.save as ReturnType<typeof vi.fn>).mockResolvedValue(
+        updated as any,
+      );
 
-      const result = await repository.upsertSubscription({ userId: mockUserId, category: mockCategory, areaOrRadius: 10 });
+      const result = await repository.upsertSubscription({
+        userId: mockUserId,
+        category: mockCategory,
+        areaOrRadius: 10,
+      });
 
-      expect(repository.findSubscription).toHaveBeenCalledWith(mockUserId, mockCategory);
-      expect(subscriptionRepo.save).toHaveBeenCalledWith(expect.objectContaining({ areaOrRadius: 10 }));
+      expect(repository.findSubscription).toHaveBeenCalledWith(
+        mockUserId,
+        mockCategory,
+      );
+      expect(subscriptionRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ areaOrRadius: 10 }),
+      );
       expect(result.areaOrRadius).toBe(10);
     });
 
     it('should create new subscription when not exists', async () => {
-      (repository.findSubscription as ReturnType<typeof vi.fn>).mockResolvedValue(null);
-      const newSub = { userId: mockUserId, category: mockCategory, areaOrRadius: 5 };
-      (subscriptionRepo.create as ReturnType<typeof vi.fn>).mockReturnValue(newSub as any);
-      (subscriptionRepo.save as ReturnType<typeof vi.fn>).mockResolvedValue(newSub as any);
+      vi.spyOn(repository, 'findSubscription').mockResolvedValue(null);
+      const newSub = {
+        userId: mockUserId,
+        category: mockCategory,
+        areaOrRadius: 5,
+      };
+      (subscriptionRepo.create as ReturnType<typeof vi.fn>).mockReturnValue(
+        newSub as any,
+      );
+      (subscriptionRepo.save as ReturnType<typeof vi.fn>).mockResolvedValue(
+        newSub as any,
+      );
 
-      const result = await repository.upsertSubscription({ userId: mockUserId, category: mockCategory, areaOrRadius: 5 });
+      const result = await repository.upsertSubscription({
+        userId: mockUserId,
+        category: mockCategory,
+        areaOrRadius: 5,
+      });
 
-      expect(subscriptionRepo.create).toHaveBeenCalledWith({ userId: mockUserId, category: mockCategory, areaOrRadius: 5 });
+      expect(subscriptionRepo.create).toHaveBeenCalledWith({
+        userId: mockUserId,
+        category: mockCategory,
+        areaOrRadius: 5,
+      });
       expect(subscriptionRepo.save).toHaveBeenCalledWith(newSub);
     });
   });
 
   describe('deleteSubscription', () => {
     it('should delete subscription', async () => {
-      (subscriptionRepo.delete as ReturnType<typeof vi.fn>).mockResolvedValue({ affected: 1 } as any);
+      (subscriptionRepo.delete as ReturnType<typeof vi.fn>).mockResolvedValue({
+        affected: 1,
+      } as any);
 
       await repository.deleteSubscription(mockUserId, mockCategory);
 
-      expect(subscriptionRepo.delete).toHaveBeenCalledWith({ userId: mockUserId, category: mockCategory });
+      expect(subscriptionRepo.delete).toHaveBeenCalledWith({
+        userId: mockUserId,
+        category: mockCategory,
+      });
     });
   });
 
   describe('findMatchingSubscriptions', () => {
     it('should query subscriptions matching category, location, and priority', async () => {
       const mockSubscriptions = [
-        { userId: 'user-1', category: 'flooding', areaOrRadius: 10, priorityThreshold: 'high', quietHours: null },
+        {
+          userId: 'user-1',
+          category: 'flooding',
+          areaOrRadius: 10,
+          priorityThreshold: 'high',
+          quietHours: null,
+        },
       ];
-      (mockQueryBuilder.getMany as ReturnType<typeof vi.fn>).mockResolvedValue(mockSubscriptions as any);
+      (mockQueryBuilder.getMany as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockSubscriptions as any,
+      );
 
-      const result = await repository.findMatchingSubscriptions('flooding', 6.5244, 3.3792, 'high');
+      const result = await repository.findMatchingSubscriptions(
+        'flooding',
+        6.5244,
+        3.3792,
+        'high',
+      );
 
       expect(subscriptionRepo.createQueryBuilder).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('sub.category = :category', { category: 'flooding' });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'sub.category = :category',
+        { category: 'flooding' },
+      );
       expect(result).toHaveLength(1);
     });
 
@@ -160,11 +240,30 @@ describe('NotificationsRepository', () => {
         category: 'flooding',
         areaOrRadius: 10,
         priorityThreshold: 'high',
-        quietHours: { start: '00:00', end: '23:59', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] },
+        quietHours: {
+          start: '00:00',
+          end: '23:59',
+          days: [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+          ],
+        },
       };
-      (mockQueryBuilder.getMany as ReturnType<typeof vi.fn>).mockResolvedValue([mockSubscription] as any);
+      (mockQueryBuilder.getMany as ReturnType<typeof vi.fn>).mockResolvedValue([
+        mockSubscription,
+      ] as any);
 
-      const result = await repository.findMatchingSubscriptions('flooding', 6.5244, 3.3792, 'high');
+      const result = await repository.findMatchingSubscriptions(
+        'flooding',
+        6.5244,
+        3.3792,
+        'high',
+      );
 
       expect(result).toHaveLength(0);
     });
@@ -179,8 +278,12 @@ describe('NotificationsRepository', () => {
         provider: 'fcm',
       };
       const savedDelivery = { id: 'delivery-1', ...deliveryData };
-      (deliveryRepo.create as ReturnType<typeof vi.fn>).mockReturnValue(savedDelivery as any);
-      (deliveryRepo.save as ReturnType<typeof vi.fn>).mockResolvedValue(savedDelivery as any);
+      (deliveryRepo.create as ReturnType<typeof vi.fn>).mockReturnValue(
+        savedDelivery as any,
+      );
+      (deliveryRepo.save as ReturnType<typeof vi.fn>).mockResolvedValue(
+        savedDelivery as any,
+      );
 
       const result = await repository.createDelivery(deliveryData);
 
@@ -193,25 +296,42 @@ describe('NotificationsRepository', () => {
   describe('findDelivery', () => {
     it('should return delivery by ID', async () => {
       const mockDelivery = { id: 'delivery-1', channel: DeliveryChannel.PUSH };
-      (deliveryRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(mockDelivery as any);
+      (deliveryRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockDelivery as any,
+      );
 
       const result = await repository.findDelivery('delivery-1');
 
-      expect(deliveryRepo.findOne).toHaveBeenCalledWith({ where: { id: 'delivery-1' } });
+      expect(deliveryRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'delivery-1' },
+      });
       expect(result).toEqual(mockDelivery);
     });
   });
 
   describe('updateDelivery', () => {
     it('should update and return delivery', async () => {
-      const updatedDelivery = { id: 'delivery-1', deliveryState: DeliveryState.SENT };
-      (deliveryRepo.update as ReturnType<typeof vi.fn>).mockResolvedValue({ affected: 1 } as any);
-      (deliveryRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(updatedDelivery as any);
+      const updatedDelivery = {
+        id: 'delivery-1',
+        deliveryState: DeliveryState.SENT,
+      };
+      (deliveryRepo.update as ReturnType<typeof vi.fn>).mockResolvedValue({
+        affected: 1,
+      } as any);
+      (deliveryRepo.findOne as ReturnType<typeof vi.fn>).mockResolvedValue(
+        updatedDelivery as any,
+      );
 
-      const result = await repository.updateDelivery('delivery-1', { deliveryState: DeliveryState.SENT });
+      const result = await repository.updateDelivery('delivery-1', {
+        deliveryState: DeliveryState.SENT,
+      });
 
-      expect(deliveryRepo.update).toHaveBeenCalledWith('delivery-1', { deliveryState: DeliveryState.SENT });
-      expect(deliveryRepo.findOne).toHaveBeenCalledWith({ where: { id: 'delivery-1' } });
+      expect(deliveryRepo.update).toHaveBeenCalledWith('delivery-1', {
+        deliveryState: DeliveryState.SENT,
+      });
+      expect(deliveryRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'delivery-1' },
+      });
       expect(result).toEqual(updatedDelivery);
     });
   });
@@ -222,11 +342,15 @@ describe('NotificationsRepository', () => {
         { id: 'd1', incidentIdOrSosId: mockIncidentId },
         { id: 'd2', incidentIdOrSosId: mockIncidentId },
       ];
-      (deliveryRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(mockDeliveries as any);
+      (deliveryRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockDeliveries as any,
+      );
 
       const result = await repository.findDeliveriesByIncident(mockIncidentId);
 
-      expect(deliveryRepo.find).toHaveBeenCalledWith({ where: { incidentIdOrSosId: mockIncidentId } });
+      expect(deliveryRepo.find).toHaveBeenCalledWith({
+        where: { incidentIdOrSosId: mockIncidentId },
+      });
       expect(result).toHaveLength(2);
     });
   });
@@ -234,10 +358,20 @@ describe('NotificationsRepository', () => {
   describe('findPendingDeliveries', () => {
     it('should return pending deliveries ordered by createdAt', async () => {
       const mockDeliveries = [
-        { id: 'd1', deliveryState: DeliveryState.QUEUED, createdAt: new Date('2024-01-01') },
-        { id: 'd2', deliveryState: DeliveryState.QUEUED, createdAt: new Date('2024-01-02') },
+        {
+          id: 'd1',
+          deliveryState: DeliveryState.QUEUED,
+          createdAt: new Date('2024-01-01'),
+        },
+        {
+          id: 'd2',
+          deliveryState: DeliveryState.QUEUED,
+          createdAt: new Date('2024-01-02'),
+        },
       ];
-      (deliveryRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(mockDeliveries as any);
+      (deliveryRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockDeliveries as any,
+      );
 
       const result = await repository.findPendingDeliveries(50);
 
@@ -253,10 +387,20 @@ describe('NotificationsRepository', () => {
   describe('findDeliveriesByRecipient', () => {
     it('should return deliveries for recipient ordered by createdAt desc', async () => {
       const mockDeliveries = [
-        { id: 'd1', recipientId: mockUserId, createdAt: new Date('2024-01-02') },
-        { id: 'd2', recipientId: mockUserId, createdAt: new Date('2024-01-01') },
+        {
+          id: 'd1',
+          recipientId: mockUserId,
+          createdAt: new Date('2024-01-02'),
+        },
+        {
+          id: 'd2',
+          recipientId: mockUserId,
+          createdAt: new Date('2024-01-01'),
+        },
       ];
-      (deliveryRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(mockDeliveries as any);
+      (deliveryRepo.find as ReturnType<typeof vi.fn>).mockResolvedValue(
+        mockDeliveries as any,
+      );
 
       const result = await repository.findDeliveriesByRecipient(mockUserId);
 
@@ -272,7 +416,12 @@ describe('NotificationsRepository', () => {
     it('should count deliveries within cooldown period', async () => {
       (deliveryRepo.count as ReturnType<typeof vi.fn>).mockResolvedValue(2);
 
-      const result = await repository.countRecentDeliveries(mockUserId, mockIncidentId, DeliveryChannel.PUSH, 30);
+      const result = await repository.countRecentDeliveries(
+        mockUserId,
+        mockIncidentId,
+        DeliveryChannel.PUSH,
+        30,
+      );
 
       expect(deliveryRepo.count).toHaveBeenCalledWith({
         where: {
@@ -301,9 +450,13 @@ describe('NotificationsRepository', () => {
         groupBy: vi.fn().mockReturnThis(),
         getRawMany: vi.fn().mockResolvedValue(mockRaw),
       };
-      (deliveryRepo.createQueryBuilder as ReturnType<typeof vi.fn>).mockReturnValue(mockQb as any);
+      (
+        deliveryRepo.createQueryBuilder as ReturnType<typeof vi.fn>
+      ).mockReturnValue(mockQb as any);
 
-      const result = await repository.getDeliveryStats({ channel: DeliveryChannel.PUSH });
+      const result = await repository.getDeliveryStats({
+        channel: DeliveryChannel.PUSH,
+      });
 
       expect(result).toEqual({ queued: 10, sent: 50, delivered: 45 });
     });
@@ -315,13 +468,21 @@ describe('NotificationsRepository', () => {
         select: vi.fn().mockReturnThis(),
         addSelect: vi.fn().mockReturnThis(),
         groupBy: vi.fn().mockReturnThis(),
-        getRawMany: vi.fn().mockResolvedValue([{ state: 'failed', count: '5' }]),
+        getRawMany: vi
+          .fn()
+          .mockResolvedValue([{ state: 'failed', count: '5' }]),
       };
-      (deliveryRepo.createQueryBuilder as ReturnType<typeof vi.fn>).mockReturnValue(mockQb as any);
+      (
+        deliveryRepo.createQueryBuilder as ReturnType<typeof vi.fn>
+      ).mockReturnValue(mockQb as any);
 
-      const result = await repository.getDeliveryStats({ deliveryState: DeliveryState.FAILED });
+      const result = await repository.getDeliveryStats({
+        deliveryState: DeliveryState.FAILED,
+      });
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith('d.deliveryState = :state', { state: DeliveryState.FAILED });
+      expect(mockQb.andWhere).toHaveBeenCalledWith('d.deliveryState = :state', {
+        state: DeliveryState.FAILED,
+      });
       expect(result).toEqual({ failed: 5 });
     });
   });

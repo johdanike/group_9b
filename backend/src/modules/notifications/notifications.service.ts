@@ -1,8 +1,10 @@
+import { EntityManager } from 'typeorm';
+import { Report } from '../reports/entities/report.entity.js';
+import { NotificationDelivery } from './entities/notification-delivery.entity.js';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { NotificationSubscription } from './entities/notification-subscription.entity.js';
-import { NotificationDelivery } from './entities/notification-delivery.entity.js';
 import { NotificationsRepository } from './repositories/notifications.repository.js';
 import {
   CreateNotificationSubscriptionDto,
@@ -44,7 +46,40 @@ export class NotificationsService {
   private readonly DEFAULT_COOLDOWN_MINUTES = 30;
   private readonly DEFAULT_CHANNELS: DeliveryChannel[] = [DeliveryChannel.PUSH];
 
-  constructor(private readonly notificationsRepository: NotificationsRepository) {}
+  constructor(
+    private readonly notificationsRepository: NotificationsRepository,
+  ) {}
+
+  async notifyReport(report: Report, manager: EntityManager): Promise<void> {
+    const [longitude, latitude] = report.coordinatesOrArea.coordinates;
+    const matches =
+      await this.notificationsRepository.findMatchingSubscriptions(
+        report.category,
+        latitude,
+        longitude,
+        'normal',
+      );
+    for (const subscription of matches) {
+      if (subscription.userId === report.reporterId) continue;
+      await manager.save(
+        NotificationDelivery,
+        manager.create(NotificationDelivery, {
+          recipientId: subscription.userId,
+          incidentIdOrSosId: report.id,
+          channel: 'in_app',
+          provider: 'local-inbox',
+          attempt: 1,
+          deliveryState: 'delivered',
+          timestamps: { deliveredAt: new Date() },
+          payload: {
+            title: `${report.category} | ${report.metadata?.areaName || 'Nearby'}`,
+            body: report.description,
+            reportId: report.id,
+          },
+        }),
+      );
+    }
+  }
 
   // Subscription management
   async createSubscription(
@@ -55,20 +90,33 @@ export class NotificationsService {
       userId,
       category: dto.category,
       areaOrRadius: dto.areaOrRadius,
+      latitude: dto.latitude ?? 6.5244,
+      longitude: dto.longitude ?? 3.3792,
       priorityThreshold: dto.priorityThreshold ?? 'normal',
       quietHours: dto.quietHours,
     });
     return new NotificationSubscriptionResponseDto(subscription);
   }
 
-  async getSubscriptions(userId: string): Promise<NotificationSubscriptionResponseDto[]> {
-    const subscriptions = await this.notificationsRepository.findSubscriptionsByUser(userId);
+  async getSubscriptions(
+    userId: string,
+  ): Promise<NotificationSubscriptionResponseDto[]> {
+    const subscriptions =
+      await this.notificationsRepository.findSubscriptionsByUser(userId);
     return subscriptions.map((s) => new NotificationSubscriptionResponseDto(s));
   }
 
-  async getSubscription(userId: string, category: string): Promise<NotificationSubscriptionResponseDto | null> {
-    const subscription = await this.notificationsRepository.findSubscription(userId, category);
-    return subscription ? new NotificationSubscriptionResponseDto(subscription) : null;
+  async getSubscription(
+    userId: string,
+    category: string,
+  ): Promise<NotificationSubscriptionResponseDto | null> {
+    const subscription = await this.notificationsRepository.findSubscription(
+      userId,
+      category,
+    );
+    return subscription
+      ? new NotificationSubscriptionResponseDto(subscription)
+      : null;
   }
 
   async updateSubscription(
@@ -76,7 +124,10 @@ export class NotificationsService {
     category: string,
     dto: UpdateNotificationSubscriptionDto,
   ): Promise<NotificationSubscriptionResponseDto | null> {
-    const existing = await this.notificationsRepository.findSubscription(userId, category);
+    const existing = await this.notificationsRepository.findSubscription(
+      userId,
+      category,
+    );
     if (!existing) return null;
 
     const updated = await this.notificationsRepository.upsertSubscription({
@@ -93,7 +144,9 @@ export class NotificationsService {
   }
 
   // Notification enqueueing with deduplication
-  async enqueueNotification(params: EnqueueNotificationParams): Promise<DeliveryResult[]> {
+  async enqueueNotification(
+    params: EnqueueNotificationParams,
+  ): Promise<DeliveryResult[]> {
     const {
       incidentIdOrSosId,
       category,
@@ -107,15 +160,18 @@ export class NotificationsService {
       cooldownMinutes = this.DEFAULT_COOLDOWN_MINUTES,
     } = params;
 
-    const subscriptions = await this.notificationsRepository.findMatchingSubscriptions(
-      category,
-      latitude,
-      longitude,
-      priority,
-    );
+    const subscriptions =
+      await this.notificationsRepository.findMatchingSubscriptions(
+        category,
+        latitude,
+        longitude,
+        priority,
+      );
 
     if (subscriptions.length === 0) {
-      this.logger.debug(`No matching subscriptions for incident ${incidentIdOrSosId} category ${category}`);
+      this.logger.debug(
+        `No matching subscriptions for incident ${incidentIdOrSosId} category ${category}`,
+      );
       return [];
     }
 
@@ -124,12 +180,13 @@ export class NotificationsService {
     for (const subscription of subscriptions) {
       for (const channel of channels) {
         // Check deduplication: has this user received a notification for this incident via this channel recently?
-        const recentCount = await this.notificationsRepository.countRecentDeliveries(
-          subscription.userId,
-          incidentIdOrSosId,
-          channel,
-          cooldownMinutes,
-        );
+        const recentCount =
+          await this.notificationsRepository.countRecentDeliveries(
+            subscription.userId,
+            incidentIdOrSosId,
+            channel,
+            cooldownMinutes,
+          );
 
         if (recentCount > 0) {
           this.logger.debug(
@@ -163,7 +220,9 @@ export class NotificationsService {
           status: 'enqueued',
         });
 
-        this.logger.debug(`Enqueued notification ${delivery.id} for user ${subscription.userId} via ${channel}`);
+        this.logger.debug(
+          `Enqueued notification ${delivery.id} for user ${subscription.userId} via ${channel}`,
+        );
       }
     }
 
@@ -175,26 +234,40 @@ export class NotificationsService {
     return this.notificationsRepository.findPendingDeliveries(limit);
   }
 
-  async markDeliverySent(deliveryId: string, providerResponse?: any): Promise<NotificationDelivery | null> {
+  async markDeliverySent(
+    deliveryId: string,
+    providerResponse?: any,
+  ): Promise<NotificationDelivery | null> {
     const updates: Partial<NotificationDelivery> = {
       deliveryState: DeliveryState.SENT,
       timestamps: { sentAt: new Date(), ...providerResponse },
     };
     if (providerResponse?.cost) {
-      updates.costMetadata = { ...updates.costMetadata, ...providerResponse.cost };
+      updates.costMetadata = {
+        ...updates.costMetadata,
+        ...providerResponse.cost,
+      };
     }
     return this.notificationsRepository.updateDelivery(deliveryId, updates);
   }
 
-  async markDeliveryDelivered(deliveryId: string, providerResponse?: any): Promise<NotificationDelivery | null> {
+  async markDeliveryDelivered(
+    deliveryId: string,
+    providerResponse?: any,
+  ): Promise<NotificationDelivery | null> {
     return this.notificationsRepository.updateDelivery(deliveryId, {
       deliveryState: DeliveryState.DELIVERED,
       timestamps: { deliveredAt: new Date(), ...providerResponse },
     });
   }
 
-  async markDeliveryFailed(deliveryId: string, error: string, willRetry: boolean): Promise<NotificationDelivery | null> {
-    const delivery = await this.notificationsRepository.findDelivery(deliveryId);
+  async markDeliveryFailed(
+    deliveryId: string,
+    error: string,
+    willRetry: boolean,
+  ): Promise<NotificationDelivery | null> {
+    const delivery =
+      await this.notificationsRepository.findDelivery(deliveryId);
     if (!delivery) return null;
 
     const nextAttempt = willRetry ? delivery.attempt + 1 : delivery.attempt;
@@ -207,15 +280,21 @@ export class NotificationsService {
     });
   }
 
-  async markDeliveryAcknowledged(deliveryId: string): Promise<NotificationDelivery | null> {
+  async markDeliveryAcknowledged(
+    deliveryId: string,
+  ): Promise<NotificationDelivery | null> {
+    const delivery =
+      await this.notificationsRepository.findDelivery(deliveryId);
+    if (!delivery) return null;
     return this.notificationsRepository.updateDelivery(deliveryId, {
       deliveryState: DeliveryState.ACKNOWLEDGED,
-      timestamps: { acknowledgedAt: new Date() },
+      timestamps: { ...delivery.timestamps, acknowledgedAt: new Date() },
     });
   }
 
   async retryFailedDeliveries(maxAttempts = 3): Promise<number> {
-    const failedDeliveries = await this.notificationsRepository.findFailedDeliveries();
+    const failedDeliveries =
+      await this.notificationsRepository.findFailedDeliveries();
 
     let retried = 0;
     for (const delivery of failedDeliveries) {
@@ -235,18 +314,25 @@ export class NotificationsService {
     return this.notificationsRepository.findDelivery(deliveryId);
   }
 
-  async getDeliveriesByIncident(incidentId: string): Promise<NotificationDelivery[]> {
+  async getDeliveriesByIncident(
+    incidentId: string,
+  ): Promise<NotificationDelivery[]> {
     return this.notificationsRepository.findDeliveriesByIncident(incidentId);
   }
 
-  async getDeliveriesByRecipient(recipientId: string): Promise<NotificationDelivery[]> {
+  async getDeliveriesByRecipient(
+    recipientId: string,
+  ): Promise<NotificationDelivery[]> {
     return this.notificationsRepository.findDeliveriesByRecipient(recipientId);
   }
 
-  async filterDeliveries(filters: NotificationDeliveryFilterDto): Promise<{ data: NotificationDelivery[]; total: number }> {
+  async filterDeliveries(
+    filters: NotificationDeliveryFilterDto,
+  ): Promise<{ data: NotificationDelivery[]; total: number }> {
     // This would be implemented with query builder for pagination
     // For now, use repository method
-    const allDeliveries = await this.notificationsRepository.filterDeliveries(filters);
+    const allDeliveries =
+      await this.notificationsRepository.filterDeliveries(filters);
     return { data: allDeliveries, total: allDeliveries.length };
   }
 

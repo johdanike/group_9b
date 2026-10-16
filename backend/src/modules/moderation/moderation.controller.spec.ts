@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ModerationController } from './moderation.controller.js';
 import { ModerationService } from './moderation.service.js';
-import { ModerationActionType, ModerationTargetType, AppealStatus } from './dto/moderation.dto.js';
+import {
+  ModerationActionType,
+  ModerationTargetType,
+  AppealStatus,
+} from './dto/moderation.dto.js';
 
 describe('ModerationController', () => {
   let controller: ModerationController;
@@ -40,7 +44,11 @@ describe('ModerationController', () => {
 
   describe('createAction', () => {
     it('should create a moderation action', async () => {
-      const result = { action: { id: 'action-1' }, targetUpdated: true, message: 'Action recorded' };
+      const result = {
+        action: { id: 'action-1' },
+        targetUpdated: true,
+        message: 'Action recorded',
+      };
       service.createAction.mockResolvedValue(result);
 
       const response = await controller.createAction(
@@ -54,7 +62,10 @@ describe('ModerationController', () => {
       );
 
       expect(response).toEqual(result);
-      expect(service.createAction).toHaveBeenCalledWith('actor-1', expect.any(Object));
+      expect(service.createAction).toHaveBeenCalledWith(
+        'actor-1',
+        expect.any(Object),
+      );
     });
   });
 
@@ -96,7 +107,10 @@ describe('ModerationController', () => {
       );
 
       expect(response).toEqual(appeal);
-      expect(service.createAppeal).toHaveBeenCalledWith('user-1', expect.any(Object));
+      expect(service.createAppeal).toHaveBeenCalledWith(
+        'user-1',
+        expect.any(Object),
+      );
     });
   });
 
@@ -124,7 +138,10 @@ describe('ModerationController', () => {
       );
 
       expect(response).toEqual(action);
-      expect(service.reviewAppeal).toHaveBeenCalledWith('moderator-1', expect.any(Object));
+      expect(service.reviewAppeal).toHaveBeenCalledWith(
+        'moderator-1',
+        expect.any(Object),
+      );
     });
   });
 
@@ -142,18 +159,27 @@ describe('ModerationController', () => {
 
   describe('quickReject', () => {
     it('should quick reject a report', async () => {
-      const result = { action: { id: 'action-1' }, targetUpdated: true, message: 'Removed' };
+      const result = {
+        action: { id: 'action-1' },
+        targetUpdated: true,
+        message: 'Removed',
+      };
       service.createAction.mockResolvedValue(result);
 
-      const response = await controller.quickReject('report-1', 'actor-1', { reason: 'Policy violation' });
+      const response = await controller.quickReject('report-1', 'actor-1', {
+        reason: 'Policy violation',
+      });
 
       expect(response).toEqual(result);
-      expect(service.createAction).toHaveBeenCalledWith('actor-1', expect.objectContaining({
-        targetId: 'report-1',
-        targetType: ModerationTargetType.REPORT,
-        action: ModerationActionType.REMOVE,
-        newState: 'Removed',
-      }));
+      expect(service.createAction).toHaveBeenCalledWith(
+        'actor-1',
+        expect.objectContaining({
+          targetId: 'report-1',
+          targetType: ModerationTargetType.REPORT,
+          action: ModerationActionType.REMOVE,
+          newState: 'removed',
+        }),
+      );
     });
   });
 });

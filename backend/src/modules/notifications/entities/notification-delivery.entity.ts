@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('notification_deliveries')
 export class NotificationDelivery {
@@ -20,7 +27,12 @@ export class NotificationDelivery {
   @Column({ type: 'int', default: 1 })
   attempt: number;
 
-  @Column({ type: 'varchar', length: 50, name: 'delivery_state', default: 'pending' })
+  @Column({
+    type: 'varchar',
+    length: 50,
+    name: 'delivery_state',
+    default: 'pending',
+  })
   deliveryState: string;
 
   @Column({ type: 'jsonb', name: 'timestamps', nullable: true })
@@ -29,18 +41,25 @@ export class NotificationDelivery {
   @Column({ type: 'jsonb', name: 'cost_metadata', nullable: true })
   costMetadata: any;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @Column({ type: 'jsonb', nullable: true })
+  payload: { title: string; body: string; reportId: string };
+
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
   @ManyToOne('User')
   @JoinColumn({ name: 'recipient' })
   recipient: any;
 
-  @ManyToOne('Incident', 'notificationDeliveries')
+  @ManyToOne('Incident', 'notificationDeliveries', {
+    createForeignKeyConstraints: false,
+  })
   @JoinColumn({ name: 'incident_id_or_sos_id' })
   incident: any;
 
-  @ManyToOne('SOSRequest', 'notificationDeliveries')
+  @ManyToOne('SOSRequest', 'notificationDeliveries', {
+    createForeignKeyConstraints: false,
+  })
   @JoinColumn({ name: 'incident_id_or_sos_id' })
   sosRequest: any;
 }

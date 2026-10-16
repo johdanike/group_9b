@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('moderation_actions')
 export class ModerationAction {
@@ -20,10 +27,15 @@ export class ModerationAction {
   @Column({ type: 'text' })
   reason: string;
 
-  @CreateDateColumn({ name: 'timestamp' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'timestamp' })
   timestamp: Date;
 
-  @Column({ type: 'varchar', length: 20, name: 'appeal_status', default: 'none' })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    name: 'appeal_status',
+    default: 'none',
+  })
   appealStatus: string;
 
   @Column({ type: 'jsonb', nullable: true })
@@ -33,7 +45,7 @@ export class ModerationAction {
   @JoinColumn({ name: 'actor_id' })
   actor: any;
 
-  @ManyToOne('User')
+  @ManyToOne('User', { createForeignKeyConstraints: false })
   @JoinColumn({ name: 'target_id' })
   target: any;
 }

@@ -1,6 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 
 @Entity('confirmations')
+@Index(['reportIdOrIncidentId', 'userId'], { unique: true })
 export class Confirmation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -17,18 +26,18 @@ export class Confirmation {
   @Column({ type: 'varchar', length: 20, name: 'confirmation_or_dispute' })
   confirmationOrDispute: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
   @ManyToOne('User', 'confirmations')
   @JoinColumn({ name: 'user_id' })
   user: any;
 
-  @ManyToOne('Report')
+  @ManyToOne('Report', { createForeignKeyConstraints: false })
   @JoinColumn({ name: 'report_id_or_incident_id' })
   report: any;
 
-  @ManyToOne('Incident')
+  @ManyToOne('Incident', { createForeignKeyConstraints: false })
   @JoinColumn({ name: 'report_id_or_incident_id' })
   incident: any;
 }

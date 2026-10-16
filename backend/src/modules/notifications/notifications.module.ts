@@ -1,3 +1,4 @@
+import { IdentityModule } from '../identity/identity.module.js';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationsController } from './notifications.controller.js';
@@ -7,7 +8,10 @@ import { NotificationSubscription } from './entities/notification-subscription.e
 import { NotificationDelivery } from './entities/notification-delivery.entity.js';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([NotificationSubscription, NotificationDelivery])],
+  imports: [
+    IdentityModule,
+    TypeOrmModule.forFeature([NotificationSubscription, NotificationDelivery]),
+  ],
   controllers: [NotificationsController],
   providers: [NotificationsService, NotificationsRepository],
   exports: [NotificationsService, NotificationsRepository],

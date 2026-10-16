@@ -1,4 +1,13 @@
-import { IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  ValidateNested,
+  Min,
+  Max,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -27,15 +36,53 @@ export class QuietHoursDto {
 }
 
 export class CreateNotificationSubscriptionDto {
-  @ApiProperty({ enum: ['traffic', 'flooding', 'fire', 'accident', 'utility_outage', 'security', 'public_event', 'community_disruption', 'medical', 'other'] })
-  @IsString()
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude?: number;
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude?: number;
+  @ApiProperty({
+    enum: [
+      'traffic',
+      'flooding',
+      'fire',
+      'accident',
+      'utility_outage',
+      'security',
+      'public_event',
+      'community_disruption',
+      'medical',
+      'other',
+    ],
+  })
+  @IsIn([
+    'traffic',
+    'weather',
+    'fire',
+    'security',
+    'medical',
+    'utilities',
+    'community',
+    'event',
+    'other',
+  ])
   category: string;
 
   @ApiProperty({ example: 3.5, description: 'Radius in kilometers' })
   @IsNumber()
+  @Min(0.1)
+  @Max(100)
   areaOrRadius: number;
 
-  @ApiPropertyOptional({ enum: NotificationPriority, default: NotificationPriority.NORMAL })
+  @ApiPropertyOptional({
+    enum: NotificationPriority,
+    default: NotificationPriority.NORMAL,
+  })
   @IsOptional()
   @IsEnum(NotificationPriority)
   priorityThreshold?: NotificationPriority;

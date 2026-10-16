@@ -1,4 +1,21 @@
-import { IsString, IsNotEmpty, IsUUID, IsOptional, IsEnum, ValidateNested, IsNumber, Min, Max, IsArray, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsUUID,
+  IsOptional,
+  IsEnum,
+  ValidateNested,
+  IsNumber,
+  Min,
+  Max,
+  IsArray,
+  IsBoolean,
+  IsDefined,
+  IsISO8601,
+  MinLength,
+  MaxLength,
+  IsIn,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReportCategory } from '../interfaces/report.interface.js';
 
@@ -29,14 +46,17 @@ export class CreateReportDto {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(10)
+  @MaxLength(1500)
   description: string;
 
+  @IsDefined()
   @ValidateNested()
   @Type(() => LocationDto)
   location: LocationDto;
 
   @IsOptional()
-  @IsString()
+  @IsISO8601()
   observedAt?: string;
 
   @IsOptional()
@@ -60,7 +80,7 @@ export class UpdateReportDto {
   location?: LocationDto;
 
   @IsOptional()
-  @IsString()
+  @IsISO8601()
   observedAt?: string;
 
   @IsOptional()
@@ -73,7 +93,7 @@ export class ConfirmationDto {
   @IsUUID()
   reportId: string;
 
-  @IsEnum(['confirm', 'dispute'])
+  @IsIn(['confirm', 'dispute'])
   action: 'confirm' | 'dispute';
 
   @IsOptional()

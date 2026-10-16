@@ -1,9 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotificationsService, EnqueueNotificationParams } from './notifications.service.js';
+import {
+  NotificationsService,
+  EnqueueNotificationParams,
+} from './notifications.service.js';
 import { NotificationsRepository } from './repositories/notifications.repository.js';
 import { NotificationSubscription } from './entities/notification-subscription.entity.js';
 import { NotificationDelivery } from './entities/notification-delivery.entity.js';
-import { CreateNotificationSubscriptionDto, NotificationPriority } from './dto/create-notification-subscription.dto.js';
+import {
+  CreateNotificationSubscriptionDto,
+  NotificationPriority,
+} from './dto/create-notification-subscription.dto.js';
 import {
   DeliveryChannel,
   DeliveryState,
@@ -67,6 +73,8 @@ describe('NotificationsService', () => {
       expect(repository.upsertSubscription).toHaveBeenCalledWith({
         userId: mockUserId,
         category: dto.category,
+        latitude: 6.5244,
+        longitude: 3.3792,
         areaOrRadius: dto.areaOrRadius,
         priorityThreshold: dto.priorityThreshold,
         quietHours: undefined,
@@ -79,7 +87,11 @@ describe('NotificationsService', () => {
       const dto: CreateNotificationSubscriptionDto = {
         category: 'traffic',
         areaOrRadius: 3,
-        quietHours: { start: '22:00', end: '07:00', days: ['Saturday', 'Sunday'] },
+        quietHours: {
+          start: '22:00',
+          end: '07:00',
+          days: ['Saturday', 'Sunday'],
+        },
       };
       const mockSubscription = { userId: mockUserId, ...dto };
       repository.upsertSubscription.mockResolvedValue(mockSubscription as any);
@@ -93,14 +105,28 @@ describe('NotificationsService', () => {
   describe('getSubscriptions', () => {
     it('should return all subscriptions for a user', async () => {
       const mockSubscriptions = [
-        { userId: mockUserId, category: 'flooding', areaOrRadius: 5, priorityThreshold: 'high' },
-        { userId: mockUserId, category: 'traffic', areaOrRadius: 3, priorityThreshold: 'normal' },
+        {
+          userId: mockUserId,
+          category: 'flooding',
+          areaOrRadius: 5,
+          priorityThreshold: 'high',
+        },
+        {
+          userId: mockUserId,
+          category: 'traffic',
+          areaOrRadius: 3,
+          priorityThreshold: 'normal',
+        },
       ];
-      repository.findSubscriptionsByUser.mockResolvedValue(mockSubscriptions as any);
+      repository.findSubscriptionsByUser.mockResolvedValue(
+        mockSubscriptions as any,
+      );
 
       const result = await service.getSubscriptions(mockUserId);
 
-      expect(repository.findSubscriptionsByUser).toHaveBeenCalledWith(mockUserId);
+      expect(repository.findSubscriptionsByUser).toHaveBeenCalledWith(
+        mockUserId,
+      );
       expect(result).toHaveLength(2);
       expect(result[0]).toBeInstanceOf(NotificationSubscriptionResponseDto);
     });
@@ -108,12 +134,19 @@ describe('NotificationsService', () => {
 
   describe('getSubscription', () => {
     it('should return subscription when found', async () => {
-      const mockSubscription = { userId: mockUserId, category: mockCategory, areaOrRadius: 5 };
+      const mockSubscription = {
+        userId: mockUserId,
+        category: mockCategory,
+        areaOrRadius: 5,
+      };
       repository.findSubscription.mockResolvedValue(mockSubscription as any);
 
       const result = await service.getSubscription(mockUserId, mockCategory);
 
-      expect(repository.findSubscription).toHaveBeenCalledWith(mockUserId, mockCategory);
+      expect(repository.findSubscription).toHaveBeenCalledWith(
+        mockUserId,
+        mockCategory,
+      );
       expect(result).toBeInstanceOf(NotificationSubscriptionResponseDto);
     });
 
@@ -128,22 +161,41 @@ describe('NotificationsService', () => {
 
   describe('updateSubscription', () => {
     it('should update existing subscription', async () => {
-      const existing = { userId: mockUserId, category: mockCategory, areaOrRadius: 5 };
-      const dto: Partial<CreateNotificationSubscriptionDto> = { areaOrRadius: 10 };
+      const existing = {
+        userId: mockUserId,
+        category: mockCategory,
+        areaOrRadius: 5,
+      };
+      const dto: Partial<CreateNotificationSubscriptionDto> = {
+        areaOrRadius: 10,
+      };
       const updated = { ...existing, ...dto };
       repository.findSubscription.mockResolvedValue(existing as any);
       repository.upsertSubscription.mockResolvedValue(updated as any);
 
-      const result = await service.updateSubscription(mockUserId, mockCategory, dto);
+      const result = await service.updateSubscription(
+        mockUserId,
+        mockCategory,
+        dto,
+      );
 
-      expect(repository.upsertSubscription).toHaveBeenCalledWith({ ...existing, ...dto, userId: mockUserId, category: mockCategory });
+      expect(repository.upsertSubscription).toHaveBeenCalledWith({
+        ...existing,
+        ...dto,
+        userId: mockUserId,
+        category: mockCategory,
+      });
       expect(result?.areaOrRadius).toBe(10);
     });
 
     it('should return null when subscription not found', async () => {
       repository.findSubscription.mockResolvedValue(null);
 
-      const result = await service.updateSubscription(mockUserId, 'nonexistent', { areaOrRadius: 10 });
+      const result = await service.updateSubscription(
+        mockUserId,
+        'nonexistent',
+        { areaOrRadius: 10 },
+      );
 
       expect(result).toBeNull();
     });
@@ -155,7 +207,10 @@ describe('NotificationsService', () => {
 
       await service.deleteSubscription(mockUserId, mockCategory);
 
-      expect(repository.deleteSubscription).toHaveBeenCalledWith(mockUserId, mockCategory);
+      expect(repository.deleteSubscription).toHaveBeenCalledWith(
+        mockUserId,
+        mockCategory,
+      );
     });
   });
 
@@ -173,16 +228,44 @@ describe('NotificationsService', () => {
       };
 
       const mockSubscriptions = [
-        { userId: 'user-1', category: 'flooding', areaOrRadius: 10, priorityThreshold: 'high' },
-        { userId: 'user-2', category: 'flooding', areaOrRadius: 5, priorityThreshold: 'normal' },
+        {
+          userId: 'user-1',
+          category: 'flooding',
+          areaOrRadius: 10,
+          priorityThreshold: 'high',
+        },
+        {
+          userId: 'user-2',
+          category: 'flooding',
+          areaOrRadius: 5,
+          priorityThreshold: 'normal',
+        },
       ];
-      repository.findMatchingSubscriptions.mockResolvedValue(mockSubscriptions as any);
+      repository.findMatchingSubscriptions.mockResolvedValue(
+        mockSubscriptions as any,
+      );
       repository.countRecentDeliveries.mockResolvedValue(0);
       repository.createDelivery
-        .mockResolvedValueOnce({ id: 'delivery-1', channel: DeliveryChannel.PUSH, recipientId: 'user-1' } as any)
-        .mockResolvedValueOnce({ id: 'delivery-2', channel: DeliveryChannel.SMS, recipientId: 'user-1' } as any)
-        .mockResolvedValueOnce({ id: 'delivery-3', channel: DeliveryChannel.PUSH, recipientId: 'user-2' } as any)
-        .mockResolvedValueOnce({ id: 'delivery-4', channel: DeliveryChannel.SMS, recipientId: 'user-2' } as any);
+        .mockResolvedValueOnce({
+          id: 'delivery-1',
+          channel: DeliveryChannel.PUSH,
+          recipientId: 'user-1',
+        } as any)
+        .mockResolvedValueOnce({
+          id: 'delivery-2',
+          channel: DeliveryChannel.SMS,
+          recipientId: 'user-1',
+        } as any)
+        .mockResolvedValueOnce({
+          id: 'delivery-3',
+          channel: DeliveryChannel.PUSH,
+          recipientId: 'user-2',
+        } as any)
+        .mockResolvedValueOnce({
+          id: 'delivery-4',
+          channel: DeliveryChannel.SMS,
+          recipientId: 'user-2',
+        } as any);
 
       const results = await service.enqueueNotification(params);
 
@@ -207,8 +290,12 @@ describe('NotificationsService', () => {
         body: 'Heavy flooding reported',
       };
 
-      const mockSubscriptions = [{ userId: 'user-1', category: 'flooding', areaOrRadius: 10 }];
-      repository.findMatchingSubscriptions.mockResolvedValue(mockSubscriptions as any);
+      const mockSubscriptions = [
+        { userId: 'user-1', category: 'flooding', areaOrRadius: 10 },
+      ];
+      repository.findMatchingSubscriptions.mockResolvedValue(
+        mockSubscriptions as any,
+      );
       repository.countRecentDeliveries.mockResolvedValue(1);
 
       const results = await service.enqueueNotification(params);
@@ -246,10 +333,18 @@ describe('NotificationsService', () => {
         body: 'Heavy flooding reported',
       };
 
-      const mockSubscriptions = [{ userId: 'user-1', category: 'flooding', areaOrRadius: 10 }];
-      repository.findMatchingSubscriptions.mockResolvedValue(mockSubscriptions as any);
+      const mockSubscriptions = [
+        { userId: 'user-1', category: 'flooding', areaOrRadius: 10 },
+      ];
+      repository.findMatchingSubscriptions.mockResolvedValue(
+        mockSubscriptions as any,
+      );
       repository.countRecentDeliveries.mockResolvedValue(0);
-      repository.createDelivery.mockResolvedValue({ id: 'delivery-1', channel: DeliveryChannel.PUSH, recipientId: 'user-1' } as any);
+      repository.createDelivery.mockResolvedValue({
+        id: 'delivery-1',
+        channel: DeliveryChannel.PUSH,
+        recipientId: 'user-1',
+      } as any);
 
       const results = await service.enqueueNotification(params);
 
@@ -279,11 +374,16 @@ describe('NotificationsService', () => {
       const mockDelivery = { id: 'd1', deliveryState: DeliveryState.SENT };
       repository.updateDelivery.mockResolvedValue(mockDelivery as any);
 
-      const result = await service.markDeliverySent('d1', { messageId: 'msg-123' });
+      const result = await service.markDeliverySent('d1', {
+        messageId: 'msg-123',
+      });
 
-      expect(repository.updateDelivery).toHaveBeenCalledWith('d1', expect.objectContaining({
-        deliveryState: DeliveryState.SENT,
-      }));
+      expect(repository.updateDelivery).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({
+          deliveryState: DeliveryState.SENT,
+        }),
+      );
       expect(result?.deliveryState).toBe(DeliveryState.SENT);
     });
   });
@@ -293,11 +393,16 @@ describe('NotificationsService', () => {
       const mockDelivery = { id: 'd1', deliveryState: DeliveryState.DELIVERED };
       repository.updateDelivery.mockResolvedValue(mockDelivery as any);
 
-      const result = await service.markDeliveryDelivered('d1', { deliveredAt: new Date() });
+      const result = await service.markDeliveryDelivered('d1', {
+        deliveredAt: new Date(),
+      });
 
-      expect(repository.updateDelivery).toHaveBeenCalledWith('d1', expect.objectContaining({
-        deliveryState: DeliveryState.DELIVERED,
-      }));
+      expect(repository.updateDelivery).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({
+          deliveryState: DeliveryState.DELIVERED,
+        }),
+      );
       expect(result?.deliveryState).toBe(DeliveryState.DELIVERED);
     });
   });
@@ -306,39 +411,68 @@ describe('NotificationsService', () => {
     it('should increment attempt and queue for retry when willRetry is true', async () => {
       const mockDelivery = { id: 'd1', attempt: 1 };
       repository.findDelivery.mockResolvedValue(mockDelivery as any);
-      repository.updateDelivery.mockResolvedValue({ ...mockDelivery, attempt: 2, deliveryState: DeliveryState.QUEUED } as any);
-
-      const result = await service.markDeliveryFailed('d1', 'Provider error', true);
-
-      expect(repository.updateDelivery).toHaveBeenCalledWith('d1', expect.objectContaining({
+      repository.updateDelivery.mockResolvedValue({
+        ...mockDelivery,
         attempt: 2,
         deliveryState: DeliveryState.QUEUED,
-      }));
+      } as any);
+
+      const result = await service.markDeliveryFailed(
+        'd1',
+        'Provider error',
+        true,
+      );
+
+      expect(repository.updateDelivery).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({
+          attempt: 2,
+          deliveryState: DeliveryState.QUEUED,
+        }),
+      );
     });
 
     it('should mark as failed when max attempts reached', async () => {
       const mockDelivery = { id: 'd1', attempt: 3 };
       repository.findDelivery.mockResolvedValue(mockDelivery as any);
-      repository.updateDelivery.mockResolvedValue({ ...mockDelivery, deliveryState: DeliveryState.FAILED } as any);
-
-      const result = await service.markDeliveryFailed('d1', 'Provider error', false);
-
-      expect(repository.updateDelivery).toHaveBeenCalledWith('d1', expect.objectContaining({
+      repository.updateDelivery.mockResolvedValue({
+        ...mockDelivery,
         deliveryState: DeliveryState.FAILED,
-      }));
+      } as any);
+
+      const result = await service.markDeliveryFailed(
+        'd1',
+        'Provider error',
+        false,
+      );
+
+      expect(repository.updateDelivery).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({
+          deliveryState: DeliveryState.FAILED,
+        }),
+      );
     });
   });
 
   describe('markDeliveryAcknowledged', () => {
     it('should update delivery state to acknowledged', async () => {
-      const mockDelivery = { id: 'd1', deliveryState: DeliveryState.ACKNOWLEDGED };
+      const mockDelivery = {
+        id: 'd1',
+        deliveryState: DeliveryState.ACKNOWLEDGED,
+        timestamps: { deliveredAt: 'earlier' },
+      };
+      repository.findDelivery.mockResolvedValue(mockDelivery);
       repository.updateDelivery.mockResolvedValue(mockDelivery as any);
 
       const result = await service.markDeliveryAcknowledged('d1');
 
-      expect(repository.updateDelivery).toHaveBeenCalledWith('d1', expect.objectContaining({
-        deliveryState: DeliveryState.ACKNOWLEDGED,
-      }));
+      expect(repository.updateDelivery).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({
+          deliveryState: DeliveryState.ACKNOWLEDGED,
+        }),
+      );
       expect(result?.deliveryState).toBe(DeliveryState.ACKNOWLEDGED);
     });
   });
@@ -350,7 +484,9 @@ describe('NotificationsService', () => {
         { id: 'd2', attempt: 2, deliveryState: DeliveryState.FAILED },
         { id: 'd3', attempt: 3, deliveryState: DeliveryState.FAILED },
       ];
-      repository.findFailedDeliveries.mockResolvedValue(failedDeliveries as any);
+      repository.findFailedDeliveries.mockResolvedValue(
+        failedDeliveries as any,
+      );
       repository.updateDelivery.mockResolvedValue(undefined);
 
       const retried = await service.retryFailedDeliveries(3);
@@ -367,26 +503,55 @@ describe('NotificationsService', () => {
 
       const result = await service.getDeliveryStats(new Date('2024-01-01'));
 
-      expect(repository.getDeliveryStats).toHaveBeenCalledWith({ since: new Date('2024-01-01') });
+      expect(repository.getDeliveryStats).toHaveBeenCalledWith({
+        since: new Date('2024-01-01'),
+      });
       expect(result).toEqual(mockStats);
     });
   });
 
   describe('validateQuietHours', () => {
     it('should return true for valid quiet hours', () => {
-      expect(NotificationsService.validateQuietHours({ start: '22:00', end: '07:00' })).toBe(true);
-      expect(NotificationsService.validateQuietHours({ start: '00:00', end: '23:59' })).toBe(true);
+      expect(
+        NotificationsService.validateQuietHours({
+          start: '22:00',
+          end: '07:00',
+        }),
+      ).toBe(true);
+      expect(
+        NotificationsService.validateQuietHours({
+          start: '00:00',
+          end: '23:59',
+        }),
+      ).toBe(true);
     });
 
     it('should return false for invalid format', () => {
-      expect(NotificationsService.validateQuietHours({ start: '25:00', end: '07:00' })).toBe(false);
-      expect(NotificationsService.validateQuietHours({ start: '22:00', end: '24:00' })).toBe(false);
-      expect(NotificationsService.validateQuietHours({ start: '22:60', end: '07:00' })).toBe(false);
+      expect(
+        NotificationsService.validateQuietHours({
+          start: '25:00',
+          end: '07:00',
+        }),
+      ).toBe(false);
+      expect(
+        NotificationsService.validateQuietHours({
+          start: '22:00',
+          end: '24:00',
+        }),
+      ).toBe(false);
+      expect(
+        NotificationsService.validateQuietHours({
+          start: '22:60',
+          end: '07:00',
+        }),
+      ).toBe(false);
     });
 
     it('should return true when quiet hours not provided', () => {
       expect(NotificationsService.validateQuietHours({})).toBe(true);
-      expect(NotificationsService.validateQuietHours({ start: '22:00' })).toBe(true);
+      expect(NotificationsService.validateQuietHours({ start: '22:00' })).toBe(
+        true,
+      );
     });
   });
 });

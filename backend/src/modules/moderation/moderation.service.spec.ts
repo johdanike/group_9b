@@ -6,7 +6,12 @@ import { ModerationRepository } from './repositories/moderation.repository.js';
 import { Report } from '../reports/entities/report.entity.js';
 import { Incident } from '../incidents/entities/incident.entity.js';
 import { User } from '../identity/entities/user.entity.js';
-import { ModerationActionType, ModerationTargetType, AppealStatus, ReportState } from './dto/moderation.dto.js';
+import {
+  ModerationActionType,
+  ModerationTargetType,
+  AppealStatus,
+  ReportState,
+} from './dto/moderation.dto.js';
 
 describe('ModerationService', () => {
   let service: ModerationService;
@@ -32,6 +37,7 @@ describe('ModerationService', () => {
       findOne: vi.fn(),
       update: vi.fn(),
       createQueryBuilder: vi.fn(),
+      find: vi.fn().mockResolvedValue([]),
     };
 
     incidentRepo = {
@@ -68,10 +74,32 @@ describe('ModerationService', () => {
 
   describe('createAction', () => {
     it('should create a moderation action', async () => {
-      const actor = { id: 'actor-1' };
-      const action = { id: 'action-1', actorId: 'actor-1', targetId: 'report-1' };
+      const actor = { id: 'actor-1', role: 'moderator' };
+      const action = {
+        id: 'action-1',
+        actorId: 'actor-1',
+        targetId: 'report-1',
+      };
       (userRepo.findOne as any).mockResolvedValue(actor);
       (moderationRepo.create as any).mockResolvedValue(action);
+      const manager = {
+        findOne: vi
+          .fn()
+          .mockResolvedValue({
+            id: 'report-1',
+            reporterId: 'resident-1',
+            state: 'unverified',
+          }),
+        save: vi
+          .fn()
+          .mockImplementation((...args: any[]) =>
+            Promise.resolve(args[args.length - 1]),
+          ),
+        create: vi.fn().mockReturnValue(action),
+      };
+      (reportRepo as any).manager = {
+        transaction: (work: any) => work(manager),
+      };
 
       const result = await service.createAction('actor-1', {
         targetId: 'report-1',
@@ -113,9 +141,14 @@ describe('ModerationService', () => {
     it('should update action if actor is owner', async () => {
       const action = { id: 'action-1', actorId: 'actor-1', metadata: {} };
       (moderationRepo.findById as any).mockResolvedValue(action);
-      (moderationRepo.update as any).mockResolvedValue({ ...action, appealStatus: AppealStatus.PENDING });
+      (moderationRepo.update as any).mockResolvedValue({
+        ...action,
+        appealStatus: AppealStatus.PENDING,
+      });
 
-      const result = await service.updateAction('action-1', 'actor-1', { appealStatus: AppealStatus.PENDING });
+      const result = await service.updateAction('action-1', 'actor-1', {
+        appealStatus: AppealStatus.PENDING,
+      });
 
       expect(result).toBeDefined();
     });
@@ -123,7 +156,9 @@ describe('ModerationService', () => {
     it('should throw if action not found', async () => {
       (moderationRepo.findById as any).mockResolvedValue(null);
 
-      await expect(service.updateAction('action-1', 'actor-1', {})).rejects.toThrow();
+      await expect(
+        service.updateAction('action-1', 'actor-1', {}),
+      ).rejects.toThrow();
     });
   });
 
@@ -132,7 +167,10 @@ describe('ModerationService', () => {
       const actions = { data: [{ id: 'action-1' }], total: 1 };
       (moderationRepo.filterActions as any).mockResolvedValue(actions);
 
-      const result = await service.filterActions({ page: '1', limit: '10' } as any);
+      const result = await service.filterActions({
+        page: '1',
+        limit: '10',
+      } as any);
 
       expect(result).toEqual(actions);
     });
@@ -148,9 +186,16 @@ describe('ModerationService', () => {
 
   describe('createAppeal', () => {
     it('should create appeal for moderation action', async () => {
-      const action = { id: 'action-1', appealStatus: AppealStatus.NONE, metadata: {} };
+      const action = {
+        id: 'action-1',
+        appealStatus: AppealStatus.NONE,
+        metadata: {},
+      };
       (moderationRepo.findById as any).mockResolvedValue(action);
-      (moderationRepo.update as any).mockResolvedValue({ ...action, appealStatus: AppealStatus.PENDING });
+      (moderationRepo.update as any).mockResolvedValue({
+        ...action,
+        appealStatus: AppealStatus.PENDING,
+      });
 
       const result = await service.createAppeal('user-1', {
         moderationActionId: 'action-1',
@@ -175,7 +220,9 @@ describe('ModerationService', () => {
   describe('getAuditTrail', () => {
     it('should return audit trail for target', async () => {
       const actions = [{ id: 'a1' }, { id: 'a2' }];
-      (moderationRepo.getActionHistoryForTarget as any).mockResolvedValue(actions);
+      (moderationRepo.getActionHistoryForTarget as any).mockResolvedValue(
+        actions,
+      );
 
       const result = await service.getAuditTrail('target-1');
 
