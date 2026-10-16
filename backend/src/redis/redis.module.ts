@@ -1,6 +1,6 @@
-import { Module, Global } from '@nestjs/common';
+import { Module, Global, Inject, OnModuleDestroy } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 export const REDIS_CLIENT = 'REDIS_CLIENT';
 
@@ -12,7 +12,7 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
       provide: REDIS_CLIENT,
       useFactory: (configService: ConfigService) => {
         const redisConfig = configService.get('redis');
-        return new (Redis as any)({
+        return new Redis({
           host: redisConfig.host,
           port: redisConfig.port,
           retryStrategy: (times: number) => Math.min(times * 50, 2000),
@@ -24,4 +24,9 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
   ],
   exports: [REDIS_CLIENT],
 })
-export class RedisModule {}
+export class RedisModule implements OnModuleDestroy {
+  constructor(@Inject(REDIS_CLIENT) private readonly client: Redis) {}
+  async onModuleDestroy() {
+    await this.client.quit();
+  }
+}

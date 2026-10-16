@@ -8,7 +8,7 @@ const __dirname = dirname(__filename);
 
 export const databaseConfig = (): DataSourceOptions => {
   const config = appConfig();
-  
+
   return {
     type: 'postgres',
     host: config.database.host,
@@ -18,7 +18,7 @@ export const databaseConfig = (): DataSourceOptions => {
     database: config.database.name,
     synchronize: config.database.synchronize,
     logging: config.database.logging,
-    entities: [join(__dirname, '../../modules/**/*.entity{.ts,.js}')],
+    entities: [join(__dirname, '../modules/**/*.entity{.ts,.js}')],
     migrations: [join(__dirname, '../../migrations/*{.ts,.js}')],
     subscribers: [],
     extra: {

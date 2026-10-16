@@ -1,10 +1,32 @@
-import { Controller, Post, Get, Put, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Get,
+  Put,
+  Body,
+  UseGuards,
+  Request,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service.js';
-import { JwtStrategy } from '../strategies/jwt.strategy.js';
+import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../guards/roles.guard.js';
 import { Roles } from '../decorators/roles.decorator.js';
-import { SendOtpDto, VerifyOtpDto, CompleteProfileDto, UpdateProfileDto, RefreshTokenDto, LoginResponseDto } from '../dto/auth.dto.js';
+import {
+  SendOtpDto,
+  VerifyOtpDto,
+  CompleteProfileDto,
+  UpdateProfileDto,
+  RefreshTokenDto,
+  LoginResponseDto,
+} from '../dto/auth.dto.js';
 import { UserRole } from '../interfaces/identity.interface.js';
 
 @ApiTags('auth')
@@ -22,7 +44,11 @@ export class AuthController {
 
   @Post('verify-otp')
   @ApiOperation({ summary: 'Verify OTP and login/register' })
-  @ApiResponse({ status: 200, description: 'Login successful', type: LoginResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful',
+    type: LoginResponseDto,
+  })
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.authService.verifyOtpAndLogin(verifyOtpDto);
@@ -37,7 +63,7 @@ export class AuthController {
   }
 
   @Get('profile')
-  @UseGuards(JwtStrategy)
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile' })
@@ -46,35 +72,44 @@ export class AuthController {
   }
 
   @Put('profile')
-  @UseGuards(JwtStrategy)
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated' })
-  async updateProfile(@Request() req: any, @Body() updateProfileDto: UpdateProfileDto) {
+  async updateProfile(
+    @Request() req: any,
+    @Body() updateProfileDto: UpdateProfileDto,
+  ) {
     return this.authService.updateProfile(req.user.id, updateProfileDto);
   }
 
   @Put('complete-profile')
-  @UseGuards(JwtStrategy)
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Complete profile after first login' })
   @ApiResponse({ status: 200, description: 'Profile completed' })
-  async completeProfile(@Request() req: any, @Body() completeProfileDto: CompleteProfileDto) {
+  async completeProfile(
+    @Request() req: any,
+    @Body() completeProfileDto: CompleteProfileDto,
+  ) {
     return this.authService.completeProfile(req.user.id, completeProfileDto);
   }
 
   @Post('assign-responder')
-  @UseGuards(JwtStrategy, RolesGuard)
-  @Roles(UserRole.COMMUNITY_ADMIN, UserRole.SUPER_ADMIN)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Assign responder role to user (admin only)' })
   @ApiResponse({ status: 200, description: 'Role assigned' })
-  async assignResponder(@Request() req: any, @Body() body: { userId: string; communityId: string }) {
+  async assignResponder(
+    @Request() req: any,
+    @Body() body: { userId: string; communityId: string },
+  ) {
     return this.authService.assignResponderRole(body.userId, body.communityId);
   }
 
   @Post('assign-moderator')
-  @UseGuards(JwtStrategy, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Assign moderator role (super admin only)' })
@@ -84,37 +119,49 @@ export class AuthController {
   }
 
   @Post('assign-community-admin')
-  @UseGuards(JwtStrategy, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Assign community admin role (super admin only)' })
   @ApiResponse({ status: 200, description: 'Role assigned' })
-  async assignCommunityAdmin(@Request() req: any, @Body() body: { userId: string; communityId: string }) {
-    return this.authService.assignCommunityAdminRole(body.userId, body.communityId);
+  async assignCommunityAdmin(
+    @Request() req: any,
+    @Body() body: { userId: string; communityId: string },
+  ) {
+    return this.authService.assignCommunityAdminRole(
+      body.userId,
+      body.communityId,
+    );
   }
 
   @Post('suspend')
-  @UseGuards(JwtStrategy, RolesGuard)
-  @Roles(UserRole.MODERATOR, UserRole.COMMUNITY_ADMIN, UserRole.SUPER_ADMIN)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.MODERATOR, UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Suspend user (moderator+)' })
   @ApiResponse({ status: 200, description: 'User suspended' })
-  async suspendUser(@Request() req: any, @Body() body: { userId: string; reason?: string }) {
+  async suspendUser(
+    @Request() req: any,
+    @Body() body: { userId: string; reason?: string },
+  ) {
     return this.authService.suspendUser(body.userId, body.reason);
   }
 
   @Post('ban')
-  @UseGuards(JwtStrategy, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.MODERATOR, UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Ban user (moderator+)' })
   @ApiResponse({ status: 200, description: 'User banned' })
-  async banUser(@Request() req: any, @Body() body: { userId: string; reason?: string }) {
+  async banUser(
+    @Request() req: any,
+    @Body() body: { userId: string; reason?: string },
+  ) {
     return this.authService.banUser(body.userId, body.reason);
   }
 
   @Post('reactivate')
-  @UseGuards(JwtStrategy, RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.MODERATOR, UserRole.SUPER_ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reactivate suspended/banned user (moderator+)' })
@@ -124,7 +171,7 @@ export class AuthController {
   }
 
   @Post('deactivate')
-  @UseGuards(JwtStrategy)
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Deactivate own account' })
   @ApiResponse({ status: 200, description: 'Account deactivated' })

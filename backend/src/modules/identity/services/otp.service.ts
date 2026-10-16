@@ -1,110 +1,65 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import {
+  Injectable,
+  ServiceUnavailableException,
+  HttpException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as crypto from 'crypto';
-
-export interface OtpRecord {
-  id: string;
-  phone: string;
-  code: string;
-  expiresAt: Date;
-  attempts: number;
-  createdAt: Date;
-}
+import { randomInt } from 'node:crypto';
 
 @Injectable()
 export class OtpService {
-  private readonly logger = new Logger(OtpService.name);
-  private readonly otpStore = new Map<string, OtpRecord>();
-  private readonly maxAttempts = 3;
-  private readonly otpTtlMinutes = 5;
-  private readonly rateLimitWindowMinutes = 15;
-  private readonly maxOtpsPerWindow = 3;
+  private readonly otpStore = new Map<
+    string,
+    { code: string; expiresAt: number; attempts: number }
+  >();
+  private readonly requests = new Map<string, number[]>();
+  constructor(private readonly config: ConfigService) {}
 
-  constructor(
-    private readonly configService: ConfigService,
-  ) {
-    this.cleanupExpiredOtps();
-  }
-
-  async sendOtp(phone: string): Promise<{ success: boolean; message: string }> {
-    const now = new Date();
-    const windowStart = new Date(now.getTime() - this.rateLimitWindowMinutes * 60 * 1000);
-
-    const recentOtps = Array.from(this.otpStore.values()).filter(
-      (otp) => otp.phone === phone && otp.createdAt > windowStart,
-    );
-
-    if (recentOtps.length >= this.maxOtpsPerWindow) {
-      return {
-        success: false,
-        message: `Too many OTP requests. Please wait ${this.rateLimitWindowMinutes} minutes.`,
-      };
+  async sendOtp(phone: string) {
+    if (
+      this.config.get('DEMO_MODE') !== 'true' ||
+      this.config.get('NODE_ENV') === 'production'
+    ) {
+      throw new ServiceUnavailableException(
+        'SMS provider is not configured. Local demo mode is required.',
+      );
     }
-
-    const code = this.generateOtp();
-    const expiresAt = new Date(now.getTime() + this.otpTtlMinutes * 60 * 1000);
-
-    const record: OtpRecord = {
-      id: crypto.randomUUID(),
-      phone,
-      code,
-      expiresAt,
-      attempts: 0,
-      createdAt: now,
-    };
-
-    this.otpStore.set(phone, record);
-
-    this.logger.log(`OTP sent to ${phone}: ${code}`);
-
+    const now = Date.now();
+    for (const [key, record] of this.otpStore)
+      if (record.expiresAt <= now) this.otpStore.delete(key);
+    for (const [key, times] of this.requests)
+      if (times.every((t) => t <= now - 15 * 60000)) this.requests.delete(key);
+    const recent = (this.requests.get(phone) || []).filter(
+      (t) => t > now - 15 * 60000,
+    );
+    if (recent.length >= 3)
+      throw new HttpException(
+        'Too many OTP requests. Try again in 15 minutes.',
+        429,
+      );
+    this.requests.set(phone, [...recent, now]);
+    const code = String(randomInt(100000, 1000000));
+    this.otpStore.set(phone, { code, expiresAt: now + 5 * 60000, attempts: 0 });
     return {
       success: true,
-      message: 'OTP sent successfully',
+      message: 'Local demo code generated. No SMS was sent.',
+      demoOtp: code,
     };
   }
 
-  async verifyOtp(phone: string, code: string): Promise<{ success: boolean; message: string }> {
+  async verifyOtp(phone: string, code: string) {
     const record = this.otpStore.get(phone);
-
-    if (!record) {
-      return { success: false, message: 'No OTP found for this phone number' };
-    }
-
-    if (record.expiresAt < new Date()) {
-      this.otpStore.delete(phone);
-      return { success: false, message: 'OTP has expired' };
-    }
-
-    if (record.attempts >= this.maxAttempts) {
-      this.otpStore.delete(phone);
-      return { success: false, message: 'Too many failed attempts. Please request a new OTP.' };
-    }
-
+    if (!record || record.expiresAt <= Date.now())
+      return { success: false, message: 'Request a fresh code.' };
+    if (record.attempts >= 3)
+      return {
+        success: false,
+        message: 'Too many attempts. Request a fresh code.',
+      };
     record.attempts++;
-
-    if (record.code !== code) {
-      this.otpStore.set(phone, record);
-      return { success: false, message: 'Invalid OTP' };
-    }
-
+    if (record.code !== code)
+      return { success: false, message: 'Invalid code.' };
     this.otpStore.delete(phone);
-    return { success: true, message: 'OTP verified successfully' };
-  }
-
-  private generateOtp(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
-  private cleanupExpiredOtps(): void {
-    setInterval(() => {
-      const now = new Date();
-      for (const [phone, record] of this.otpStore.entries()) {
-        if (record.expiresAt < now) {
-          this.otpStore.delete(phone);
-        }
-      }
-    }, 60000);
+    return { success: true, message: 'Phone verified.' };
   }
 }

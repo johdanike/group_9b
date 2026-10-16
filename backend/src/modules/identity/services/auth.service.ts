@@ -1,10 +1,23 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { UserRepository } from '../repositories/user.repository.js';
 import { OtpService } from './otp.service.js';
 import { JwtTokenService } from './jwt.service.js';
 import { User } from '../entities/user.entity.js';
-import { UserRole, AccountStatus, LoginResponseDto } from '../interfaces/identity.interface.js';
-import { SendOtpDto, VerifyOtpDto, CompleteProfileDto, UpdateProfileDto, RefreshTokenDto } from '../dto/auth.dto.js';
+import { UserRole, AccountStatus } from '../interfaces/identity.interface.js';
+import type { LoginResponseDto } from '../interfaces/identity.interface.js';
+import {
+  SendOtpDto,
+  VerifyOtpDto,
+  CompleteProfileDto,
+  UpdateProfileDto,
+  RefreshTokenDto,
+} from '../dto/auth.dto.js';
 
 @Injectable()
 export class AuthService {
@@ -14,9 +27,13 @@ export class AuthService {
     private readonly jwtTokenService: JwtTokenService,
   ) {}
 
-  async sendOtp(sendOtpDto: SendOtpDto): Promise<{ success: boolean; message: string }> {
-    const existingUser = await this.userRepository.findByPhone(sendOtpDto.phone);
-    
+  async sendOtp(
+    sendOtpDto: SendOtpDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const existingUser = await this.userRepository.findByPhone(
+      sendOtpDto.phone,
+    );
+
     if (existingUser && existingUser.accountStatus === AccountStatus.BANNED) {
       throw new UnauthorizedException('Account is banned');
     }
@@ -24,9 +41,14 @@ export class AuthService {
     return this.otpService.sendOtp(sendOtpDto.phone);
   }
 
-  async verifyOtpAndLogin(verifyOtpDto: VerifyOtpDto): Promise<LoginResponseDto> {
-    const verification = await this.otpService.verifyOtp(verifyOtpDto.phone, verifyOtpDto.otp);
-    
+  async verifyOtpAndLogin(
+    verifyOtpDto: VerifyOtpDto,
+  ): Promise<LoginResponseDto> {
+    const verification = await this.otpService.verifyOtp(
+      verifyOtpDto.phone,
+      verifyOtpDto.otp,
+    );
+
     if (!verification.success) {
       throw new UnauthorizedException(verification.message);
     }
@@ -40,9 +62,19 @@ export class AuthService {
         accountStatus: AccountStatus.ACTIVE,
         role: UserRole.RESIDENT,
       });
+    } else if (
+      [
+        AccountStatus.BANNED,
+        AccountStatus.SUSPENDED,
+        AccountStatus.DEACTIVATED,
+      ].includes(user.accountStatus)
+    ) {
+      throw new UnauthorizedException('Account is inactive');
     } else if (user.accountStatus === AccountStatus.PENDING_VERIFICATION) {
       user.accountStatus = AccountStatus.ACTIVE;
-      await this.userRepository.update(user.id, { accountStatus: AccountStatus.ACTIVE });
+      await this.userRepository.update(user.id, {
+        accountStatus: AccountStatus.ACTIVE,
+      });
     }
 
     await this.userRepository.updateLastLogin(user.id);
@@ -64,37 +96,50 @@ export class AuthService {
     };
   }
 
-  async completeProfile(userId: string, profileDto: CompleteProfileDto): Promise<User> {
+  async completeProfile(
+    userId: string,
+    profileDto: CompleteProfileDto,
+  ): Promise<User> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     user.displayName = profileDto.displayName;
-    if (profileDto.role) user.role = profileDto.role;
     if (profileDto.language) user.language = profileDto.language;
 
     return this.userRepository.update(user.id, user);
   }
 
-  async updateProfile(userId: string, updateProfileDto: UpdateProfileDto): Promise<User> {
+  async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<User> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    if (updateProfileDto.displayName) user.displayName = updateProfileDto.displayName;
+    if (updateProfileDto.displayName)
+      user.displayName = updateProfileDto.displayName;
     if (updateProfileDto.language) user.language = updateProfileDto.language;
-    if (updateProfileDto.privacySettings) user.privacySettings = updateProfileDto.privacySettings;
+    if (updateProfileDto.lgas)
+      user.metadata = { ...user.metadata, lgas: updateProfileDto.lgas };
+    if (updateProfileDto.privacySettings)
+      user.privacySettings = updateProfileDto.privacySettings;
 
     return this.userRepository.update(user.id, user);
   }
 
-  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<{ accessToken: string }> {
+  async refreshToken(
+    refreshTokenDto: RefreshTokenDto,
+  ): Promise<{ accessToken: string }> {
     try {
-      const payload = this.jwtTokenService.verifyRefreshToken(refreshTokenDto.refreshToken);
+      const payload = this.jwtTokenService.verifyRefreshToken(
+        refreshTokenDto.refreshToken,
+      );
       const user = await this.userRepository.findById(payload.sub);
-      
+
       if (!user || user.accountStatus !== AccountStatus.ACTIVE) {
         throw new UnauthorizedException('Invalid refresh token');
       }
@@ -106,22 +151,37 @@ export class AuthService {
     }
   }
 
-  async getProfile(userId: string): Promise<User> {
-    const user = await this.userRepository.findWithRelations(userId);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
+  async getProfile(userId: string) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    const verifiedReports =
+      await this.userRepository.verifiedReportCount(userId);
+    return {
+      id: user.id,
+      phone: user.phone,
+      displayName: user.displayName,
+      role: user.role,
+      accountStatus: user.accountStatus,
+      lgas: user.metadata?.lgas || [],
+      verifiedReports,
+      trustedContributor: verifiedReports >= 10,
+      language: user.language,
+    };
   }
 
-  async assignResponderRole(userId: string, communityId: string): Promise<User> {
+  async assignResponderRole(
+    userId: string,
+    communityId: string,
+  ): Promise<User> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     if (user.role === UserRole.RESPONDER && user.communityId === communityId) {
-      throw new ConflictException('User is already a responder for this community');
+      throw new ConflictException(
+        'User is already a responder for this community',
+      );
     }
 
     user.role = UserRole.RESPONDER;
@@ -140,7 +200,10 @@ export class AuthService {
     return this.userRepository.update(user.id, user);
   }
 
-  async assignCommunityAdminRole(userId: string, communityId: string): Promise<User> {
+  async assignCommunityAdminRole(
+    userId: string,
+    communityId: string,
+  ): Promise<User> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -158,7 +221,11 @@ export class AuthService {
     }
 
     user.accountStatus = AccountStatus.SUSPENDED;
-    user.metadata = { ...user.metadata, suspensionReason: reason, suspendedAt: new Date() };
+    user.metadata = {
+      ...user.metadata,
+      suspensionReason: reason,
+      suspendedAt: new Date(),
+    };
 
     return this.userRepository.update(user.id, user);
   }
@@ -170,7 +237,11 @@ export class AuthService {
     }
 
     user.accountStatus = AccountStatus.BANNED;
-    user.metadata = { ...user.metadata, banReason: reason, bannedAt: new Date() };
+    user.metadata = {
+      ...user.metadata,
+      banReason: reason,
+      bannedAt: new Date(),
+    };
 
     return this.userRepository.update(user.id, user);
   }

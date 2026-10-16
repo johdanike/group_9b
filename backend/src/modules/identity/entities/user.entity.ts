@@ -1,4 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, OneToMany, JoinColumn, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  OneToMany,
+  JoinColumn,
+  Index,
+} from 'typeorm';
 import { UserRole, AccountStatus } from '../interfaces/identity.interface.js';
 
 @Entity('users')
@@ -14,7 +24,12 @@ export class User {
   @Column({ type: 'varchar', length: 100, name: 'display_name' })
   displayName: string;
 
-  @Column({ type: 'varchar', length: 20, name: 'account_status', default: AccountStatus.PENDING_VERIFICATION })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    name: 'account_status',
+    default: AccountStatus.PENDING_VERIFICATION,
+  })
   accountStatus: AccountStatus;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.RESIDENT })
@@ -26,13 +41,13 @@ export class User {
   @Column({ type: 'varchar', length: 10, default: 'en' })
   language: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ type: 'timestamp', name: 'last_login_at', nullable: true })
+  @Column({ type: 'timestamptz', name: 'last_login_at', nullable: true })
   lastLoginAt: Date;
 
   @Column({ type: 'jsonb', name: 'privacy_settings', nullable: true })
@@ -41,7 +56,10 @@ export class User {
   @Column({ type: 'jsonb', name: 'metadata', nullable: true })
   metadata: any;
 
-  @OneToOne('UserLocationPreference', { cascade: true })
+  @OneToOne('UserLocationPreference', {
+    cascade: true,
+    createForeignKeyConstraints: false,
+  })
   @JoinColumn({ name: 'id' })
   locationPreference: any;
 

@@ -1,3 +1,4 @@
+import { Report } from '../../reports/entities/report.entity.js';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
@@ -10,6 +11,13 @@ export class UserRepository {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
+
+  async verifiedReportCount(userId: string) {
+    return this.userRepository.manager.countBy(Report, {
+      reporterId: userId,
+      state: 'verified',
+    });
+  }
 
   async create(userData: Partial<User>): Promise<User> {
     const user = this.userRepository.create(userData);
@@ -40,7 +48,10 @@ export class UserRepository {
     return this.userRepository.find({ where: { communityId } });
   }
 
-  async findByRoleAndCommunity(role: UserRole, communityId: string): Promise<User[]> {
+  async findByRoleAndCommunity(
+    role: UserRole,
+    communityId: string,
+  ): Promise<User[]> {
     return this.userRepository.find({ where: { role, communityId } });
   }
 
@@ -72,7 +83,11 @@ export class UserRepository {
   async findWithRelations(id: string): Promise<User | null> {
     return this.userRepository.findOne({
       where: { id },
-      relations: ['locationPreference', 'responderProfiles', 'responderProfiles.community'],
+      relations: [
+        'locationPreference',
+        'responderProfiles',
+        'responderProfiles.community',
+      ],
     });
   }
 }

@@ -1,4 +1,15 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, MinLength, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  MinLength,
+  MaxLength,
+  Matches,
+  IsArray,
+  ArrayMaxSize,
+  IsIn,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { UserRole } from '../interfaces/identity.interface.js';
 
@@ -32,11 +43,6 @@ export class CompleteProfileDto {
   @MaxLength(100)
   displayName: string;
 
-  @ApiProperty({ enum: UserRole, required: false })
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
-
   @ApiProperty({ example: 'en', required: false })
   @IsOptional()
   @IsString()
@@ -44,6 +50,13 @@ export class CompleteProfileDto {
 }
 
 export class UpdateProfileDto {
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsIn(['Yaba', 'Ikeja', 'Surulere', 'Eti-Osa', 'Lagos Island', 'Ikorodu'], {
+    each: true,
+  })
+  lgas?: string[];
   @ApiProperty({ example: 'John Doe', required: false })
   @IsOptional()
   @IsString()
