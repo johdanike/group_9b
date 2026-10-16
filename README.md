@@ -37,7 +37,7 @@ The dedicated Docker Compose project is `signal-demo`. PostgreSQL/PostGIS uses l
 
 ## Demonstrate the product
 
-Open **Login** and choose a sample account. Press **Get verification code**, copy the displayed six-digit local code, then verify. **No SMS is sent.** Registration accepts a Nigerian local number or an international number and saves the name, area and default category preferences.
+Open **Login** and choose a sample account. Press **Get verification code**, read the code from `backend/.local/demo-otps.json` on the host computer, then enter it on the device. **No SMS is sent.** Registration accepts a Nigerian local number or an international number and saves the name, area and default category preferences.
 
 | Account | Phone | Use |
 | --- | --- | --- |
@@ -71,7 +71,7 @@ Use separate browsers or normal/incognito windows to represent independent users
 - Moderator queue, reasoned state changes, self-review prevention and transactional audit history.
 - Desktop/mobile dashboard, existing landing page/PWA shell, API documentation and explicit errors/loading/empty states.
 
-External push, SMS and email delivery are not connected. A saved inbox entry means available in this application's inbox; it does not indicate a message reached a phone or that an emergency responder acknowledged it.
+Opt-in Web Push is connected for supported browsers through encrypted browser push services. SMS and email are not connected. A saved inbox entry means available in the app; `accepted` push state means a push provider accepted the request, not proof a phone displayed it.
 
 ## Repository structure
 
@@ -116,7 +116,7 @@ Creating a report and its matching in-app notifications is one database transact
 
 ## Configuration
 
-`backend/.env.example` documents local settings. Actual `.env` files are ignored. `DEMO_MODE=true` enables the explicitly labelled local OTP adapter and development schema synchronisation; production does not enable either. JWT example secrets are local placeholders. Query logging is off by default; set `DB_LOGGING=true` temporarily if needed.
+`backend/.env.example` documents local settings. Actual `.env` files are ignored. `DEMO_MODE=true` enables the explicitly labelled host-only local OTP mailbox and development schema synchronisation; production does not enable either. JWT example secrets are local placeholders. Query logging is off by default; set `DB_LOGGING=true` temporarily if needed.
 
 The seed refuses to run unless demo mode is enabled, the environment is not production and the database is named `neighbourhood_signal_demo`. Fresh databases receive timezone-aware event columns. Existing databases from the older schema need a reviewed timestamp/schema migration before reuse; this demo is intended to use its dedicated database.
 
@@ -134,10 +134,53 @@ The HTTP integration suite starts a separate API process on **3100**, creates te
 
 ## Deferred work
 
-This demo does not implement the full PRD. Map view, uploaded evidence, duplicate grouping, full appeals, automatic freshness/expiry policies, real notification providers/workers, production abuse controls, billing and community administration remain follow-up work. Some inherited service methods/domain modules are scaffolding; unsupported merge/appeal-review operations explicitly fail instead of claiming completion.
+This demo does not implement the full PRD. Map view, uploaded evidence, duplicate grouping, full appeals, automatic freshness/expiry policies, production notification monitoring, production abuse controls, billing and community administration remain follow-up work. Some inherited service methods/domain modules are scaffolding; unsupported merge/appeal-review operations explicitly fail instead of claiming completion.
 
 SOS remains deferred until responder coverage, escalation, delivery monitoring and operational ownership satisfy the PRD's readiness gate. Before any real pilot, introduce reviewed database migrations, production secrets/session hardening, provider integrations, moderation policies and deployment monitoring.
 
 ## Reconcile with the team later
 
 Review this branch through a pull request before merging into `main`. Small commits separate branch integration, layout, backend fixes, frontend integration, demo data, tests and documentation. Existing team branches can be merged or selected fixes cherry-picked after reviewing the new paths. No force-push or automatic merge into `main` is required.
+
+
+## Mobile PWA and temporary HTTPS sharing
+
+`127.0.0.1` always refers to the device opening the link. On a phone it points to the phone, not this computer. For an installable app and background Web Push, use the HTTPS sharing URL.
+
+Keep the database and backend running. In separate terminals at the repository root:
+
+```powershell
+npm.cmd run build
+npm.cmd run demo:serve
+npm.cmd run demo:share
+```
+
+The first command builds the PWA. `demo:serve` serves only `frontend/dist` and proxies `/api` to the loopback-only backend. It listens on port 4173. `demo:share` uses Cloudflare's `cloudflared` to print a temporary `https://...trycloudflare.com` address and save it to `.local/share-url.txt`. This public address exposes the compiled demo and its API while the tunnel runs. It does not serve source files, environment files, the OTP mailbox, or device keys.
+
+Install cloudflared from [Cloudflare's official downloads](https://github.com/cloudflare/cloudflared/releases) or put the Windows executable at `.local/tools/cloudflared.exe`. The share script also accepts `CLOUDFLARED_PATH`. The local executable and tunnel logs/URL are ignored by Git.
+
+The temporary URL changes after restarting the tunnel. Keep the computer awake and all required processes running. An installation and notification subscription belong to that exact HTTPS origin; a new tunnel address requires opening/installing the new address and enabling notifications there. Use a named tunnel or hosted deployment for a stable pilot URL.
+
+### Install on a phone
+
+- **Android / Chrome:** open the HTTPS address in Chrome, then use **Install app** / **Add to Home screen** from the browser menu or the app's install prompt.
+- **iPhone / iPad:** open the HTTPS address in Safari, use **Share > Add to Home Screen**, then open the installed app from its icon. Web Push requires iOS/iPadOS 16.4 or later and an installed Home Screen app. See [Apple's Web Push documentation](https://developer.apple.com/documentation/usernotifications/sending-web-push-notifications-in-web-apps-and-browsers).
+- Sign in, then open **Preferences** or **Notifications** and choose **Enable phone notifications**. Accept the device permission prompt, then choose **Send test notification**.
+- Enable the desired categories and save the area/radius. Reports submitted by a different account in that area trigger alerts, including with the app in the background. Your own reports do not alert you.
+- If permission was denied, change the site's notification permission in browser/phone settings. Focus modes, OS settings, battery policies and connectivity can affect display. The app reports provider acceptance accurately.
+
+The custom service worker precaches the app shell, handles encrypted push payloads, and opens the relevant report when an alert is tapped. Authenticated API responses are never cached. Opening the shell offline does not enable offline report submission or refresh. Signing out unsubscribes the current device. Devices can also be disabled explicitly from Preferences.
+
+### Host-only demo OTPs
+
+OTP generation remains entirely on the backend. `/api/auth/send-otp` returns no code, and the frontend neither generates nor displays codes. After requesting a code, the host can inspect:
+
+```powershell
+Get-Content backend/.local/demo-otps.json
+```
+
+Each entry contains its phone, code and expiration. Give the intended tester only their code. Successful verification removes the entry; expired codes cannot authenticate. This private JSON file is outside the static server and ignored by Git. It is a demonstration adapter, not real SMS verification. `DEMO_OTP_FILE` can change its local location. Keep any custom path outside `frontend/` and public assets.
+
+Web Push VAPID keys are generated once in demo mode at `backend/.local/web-push-keys.json`; preserve this ignored file across backend restarts. Only the public key is exposed through an authenticated API. Production can instead set `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY` and `WEB_PUSH_SUBJECT`. The worker reads committed in-app notification jobs, claims them with PostgreSQL row locks/leases, retries transient errors up to three attempts, and removes expired browser subscriptions after HTTP 404/410. It keeps inbox/read state separate from push acceptance.
+
+For ordinary same-Wi-Fi testing without installation/push, browse `http://<computer-Wi-Fi-IP>:4173`. Devices must share a reachable network; guest/client isolation or a firewall may block LAN access. The HTTPS tunnel does not require opening an inbound firewall port. The development frontend can also listen on port 5173, but share the built server on 4173 publicly.
