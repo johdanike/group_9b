@@ -13,6 +13,8 @@
     "test:e2e": "node --env-file=backend/.env --test scripts/demo.e2e.mjs",
     "demo:seed": "npm run demo:seed --workspace backend",
     "db:up": "docker compose -p signal-demo up -d --wait",
-    "db:down": "docker compose -p signal-demo down"
+    "db:down": "docker compose -p signal-demo down",
+    "demo:serve": "node scripts/serve-demo.mjs",
+    "demo:share": "node scripts/share-demo.mjs"
   }
 }

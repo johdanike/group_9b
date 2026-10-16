@@ -6,10 +6,20 @@ import { VitePWA } from 'vite-plugin-pwa';
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    host: '127.0.0.1',
+    host: '0.0.0.0',
     port: 5173,
     strictPort: true,
     proxy: { '/api': 'http://127.0.0.1:3000' },
+    fs: {
+      deny: [
+        '.env',
+        '.env.*',
+        '*.{crt,pem}',
+        '**/.git/**',
+        '**/.local/**',
+        '**/backend/**',
+      ],
+    },
   },
   preview: { port: 4173, proxy: { '/api': 'http://127.0.0.1:3000' } },
   plugins: [
@@ -17,8 +27,15 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+      },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
+        id: '/',
         name: 'E don happen',
         short_name: 'E don happen',
         description: 'Send notifications to people at the same location.',
@@ -36,25 +53,6 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
-        navigateFallback: '/index.html',
-        runtimeCaching: [
-          {
-            handler: 'StaleWhileRevalidate',
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            options: { cacheName: 'google-fonts-stylesheets' },
-          },
-          {
-            handler: 'CacheFirst',
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
           },
         ],
       },

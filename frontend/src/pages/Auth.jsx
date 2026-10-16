@@ -1,10 +1,12 @@
+import { restorePushForCurrentUser } from '../lib/push.js';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, saveSession } from '../lib/api.js';
 import { AREAS, CATEGORIES } from '../data/areas.js';
 
 export default function Auth({ register = false }) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [area, setArea] = useState('Yaba');
@@ -42,6 +44,7 @@ export default function Auth({ register = false }) {
           body: { phone: normalized, otp },
         });
         saveSession(result);
+        await restorePushForCurrentUser().catch(() => {});
         if (register) {
           await api('/auth/profile', {
             method: 'PUT',
@@ -62,7 +65,7 @@ export default function Auth({ register = false }) {
             ),
           );
         }
-        navigate('/dashboard');
+        navigate(`/dashboard${search}`);
       }
     } catch (err) {
       setError(err.message);
@@ -76,7 +79,7 @@ export default function Auth({ register = false }) {
     <section className="bg-primary-soft py-14 sm:py-20">
       <div className="container-app max-w-lg">
         <p className="text-sm font-bold text-primary-dark">
-          E don happen Â· Lagos pilot
+          E don happen · Lagos pilot
         </p>
         <h1 className="mt-3 text-4xl font-extrabold">
           {register ? 'Join your neighbourhood' : 'Welcome back'}
@@ -197,7 +200,7 @@ export default function Auth({ register = false }) {
           )}
           <button className="btn-primary w-full" disabled={busy}>
             {busy
-              ? 'Please waitâ€¦'
+              ? 'Please wait…'
               : sent
                 ? 'Verify and continue'
                 : 'Get verification code'}

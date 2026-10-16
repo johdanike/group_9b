@@ -1,5 +1,7 @@
+import PhoneNotifications from '../components/PhoneNotifications.jsx';
+import { disablePush } from '../lib/push.js';
 import { useCallback, useEffect, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { api, logout, session } from '../lib/api.js';
 import { AREAS, CATEGORIES, STATUS_HELP } from '../data/areas.js';
 
@@ -34,6 +36,7 @@ function Badge({ state }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const [profile, setProfile] = useState(null);
   const [area, setArea] = useState('Yaba');
   const [radius, setRadius] = useState(5);
@@ -108,7 +111,15 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [load]);
 
-  if (!current) return <Navigate to="/login" replace />;
+  useEffect(() => {
+    const id = new URLSearchParams(search).get('report');
+    if (!profile?.id || !id || !/^[a-f0-9-]{36}$/i.test(id)) return;
+    api(`/reports/${id}`)
+      .then(setSelected)
+      .catch((err) => setError(err.message));
+  }, [search, profile?.id]);
+
+  if (!current) return <Navigate to={`/login${search}`} replace />;
 
   async function act(work, message) {
     setBusy(true);
@@ -294,8 +305,8 @@ export default function Dashboard() {
       <div className="container-app">
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900">
           <strong>Local pilot demo</strong> | Seeded reports are illustrative.
-          In-app notifications are saved locally; external push/SMS and
-          emergency response are not connected.
+          Install from the HTTPS sharing link to enable optional phone
+          notifications. SMS and emergency response are not connected.
         </div>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -319,7 +330,9 @@ export default function Dashboard() {
             </button>
             <button
               className="btn-ghost"
-              onClick={() => {
+              onClick={async () => {
+                setBusy(true);
+                await disablePush().catch(() => {});
                 logout();
                 navigate('/login');
               }}
@@ -561,6 +574,7 @@ export default function Dashboard() {
             {tab === 'Notifications' && (
               <div className={panel}>
                 <h2 className="text-xl font-bold">Your local inbox</h2>
+                <PhoneNotifications />
                 <p className="mt-2 text-sm text-ink-soft">
                   New reports matching your saved area, radius and categories.
                   Updates appear every 20 seconds or when you refresh.
@@ -621,6 +635,7 @@ export default function Dashboard() {
             {tab === 'Preferences' && (
               <div className={`${panel} space-y-5`}>
                 <h2 className="text-xl font-bold">Notification preferences</h2>
+                <PhoneNotifications />
                 <p className="text-sm text-ink-soft">
                   Choose categories below. New subscriptions use the area and
                   radius selected above.
