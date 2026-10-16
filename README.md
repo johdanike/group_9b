@@ -1,119 +1,86 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# E don happen
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A location-aware community incident reporting application for Lagos. Residents publish observations, confirm or dispute nearby reports, manage alert subscriptions, and receive in-app and optional browser push notifications. Moderators review reports and record reasons for decisions. The backend domain is named **Neighbourhood Signal**.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Project status
 
-## Description
+The integrated application is a functional development prototype, not a production release. This documentation describes [implementation snapshot `09db39d`](https://github.com/johdanike/group_9b/tree/09db39de1b8b761a369135badbb0802e9f730f99) on `demo/pitch-integration`. The documentation can be merged independently; its presence on `main` does not imply that the integrated runtime has been merged there.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Implemented: phone verification in local demo mode, JWT sessions, persistent geospatial reports, independent community votes, moderator review, contributor history badges, category/radius subscriptions, inbox notifications, and an installable PWA with opt-in Web Push. Production SMS, media uploads, emergency response dispatch, billing, and several moderation workflows remain incomplete.
 
-## Project setup
+## Technology
 
-```bash
-$ pnpm install
+| Layer | Stack |
+| --- | --- |
+| Web application | React 19, React Router 7, Vite 8, Tailwind CSS 4 |
+| API | NestJS 12, TypeScript 6, Passport/JWT, class-validator |
+| Persistence | PostgreSQL 15 with PostGIS, TypeORM |
+| Infrastructure | Redis 7, Docker Compose, optional Cloudflare temporary tunnel |
+| PWA | vite-plugin-pwa, Workbox, service worker, encrypted Web Push/VAPID |
+| Validation | Vitest, Node.js HTTP integration tests, Oxlint |
+
+## Getting started
+
+Use Node.js 24, npm 11, Git, and Docker Desktop with Linux containers. Run commands from the repository root. On Windows, use `npm.cmd` if PowerShell execution policy blocks `npm`.
+
+```sh
+git switch demo/pitch-integration
+npm ci
 ```
 
-## Compile and run the project
+Copy `backend/.env.example` to `backend/.env` without overwriting existing settings (`Copy-Item backend/.env.example backend/.env` in PowerShell, or `cp backend/.env.example backend/.env` on macOS/Linux).
 
-```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+```sh
+npm run db:up
+npm run build
+npm run demo:seed
+npm run dev
 ```
 
-## Run tests
+Open the application at http://127.0.0.1:5173 and API documentation at http://127.0.0.1:3000/api/docs. Vite forwards `/api` to the backend on port 3000. Local PostgreSQL uses port 55432 and Redis uses 56379. `npm run db:down` stops containers while retaining database volumes.
 
-```bash
-# unit tests
-$ pnpm run test
+Authentication currently requires `DEMO_MODE=true` outside production. Request a code in the application and read it on the host from `backend/.local/demo-otps.json`. Codes are generated only by the backend; no SMS provider is configured. This private file must never be committed or served publicly. The seed provides fictional accounts `+2348000000001` through `+2348000000004`; the fourth is a moderator. Sample reports are illustrative.
 
-# e2e tests
-$ pnpm run test:e2e
+## Commands
 
-# test coverage
-$ pnpm run test:cov
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start backend and frontend development processes |
+| `npm run build` | Compile backend and build the PWA |
+| `npm test` | Run backend unit tests |
+| `npm run test:e2e` | Run HTTP integration tests using its own API process and the configured demo database |
+| `npm run lint --workspace backend` | Run type-aware backend linting |
+| `npm run demo:seed` | Add guarded, idempotent sample data after building |
+| `npm run demo:serve` | Serve built frontend and proxy the API on port 4173 |
+| `npm run demo:share` | Start an optional temporary public HTTPS tunnel |
+
+## Mobile and PWA access
+
+For a built application, run the compiled backend (`npm run start:prod --workspace backend`) and `npm run demo:serve` in separate terminals after `npm run build`. `start:prod` names the compiled entry point; it does not set `NODE_ENV`.
+
+Install `cloudflared` or set `CLOUDFLARED_PATH` to its executable, then run `npm run demo:share`. Open the printed HTTPS URL on the phone. The host computer and processes must remain running. A new tunnel URL is a new browser origin and requires a new installation/subscription. Plain HTTP on a LAN generally cannot provide PWA installation or Web Push; `localhost` on a phone refers to the phone itself.
+
+Enable notifications through the application's explicit permission button. On supported iPhones/iPads, install through Safari's Add to Home Screen and launch the installed app before enabling push. The PWA caches its shell, not report data or offline writes. Provider acceptance does not prove notification display.
+
+## Repository layout
+
+```text
+backend/src/       Nest modules, entities, DTOs, guards, services, seed
+frontend/src/      Pages, shared components, API/session/push helpers, service worker
+frontend/public/   Icons and static assets
+scripts/           Development launcher, integration suite, static/API proxy, tunnel
+init-scripts/      Fresh-database PostGIS initialization
+docs/              Development and implementation reference
 ```
 
-## Deployment
+## Development and deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+Read [the development guide](docs/DEVELOPMENT.md) for setup, architecture, every source file's symbols/imports, API routes, data models, configuration, workflows, tests, troubleshooting, and production prerequisites.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Keep changes focused and reviewable. Run the checks relevant to a change, document API/configuration changes, and submit a pull request. Never commit `.env`, backend `.local` data, private notes, VAPID private keys, access tokens, or real personal data. Use synthetic fixtures when testing.
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-This project is already instrumented. Create a free account at [observe.nestjs.com](https://observe.nestjs.com), add an application, and paste the generated app key and secret into the `ObserveModule.forRoot()` call in `src/app.module.ts`.
-
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Production requires a stable HTTPS origin, managed secrets, reviewed database migrations, backups, real SMS verification, authorization hardening, abuse controls, and operational monitoring. Docker Compose defaults and automatic demo schema synchronization are development settings. See the guide's release checklist before deploying.
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-# group_9b
+No open-source license has been granted. The backend package is marked `UNLICENSED`; obtain the repository owner's permission for redistribution or reuse.
