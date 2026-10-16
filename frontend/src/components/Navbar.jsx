@@ -1,50 +1,51 @@
-import { useEffect, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
-import Logo from './Logo.jsx'
+import { useEffect, useState } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { session } from '../lib/api.js';
+import Logo from './Logo.jsx';
 
 const NAV_LINKS = [
   { label: 'Home', href: '#hero' },
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Features', href: '#features' },
   { label: 'FAQ', href: '#faq' },
-]
+];
 
 function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
     const handler = (event) => {
-      event.preventDefault()
-      setDeferredPrompt(event)
-    }
-    window.addEventListener('beforeinstallprompt', handler)
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
+      event.preventDefault();
+      setDeferredPrompt(event);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
 
   const install = async () => {
-    if (!deferredPrompt) return
-    deferredPrompt.prompt()
-    await deferredPrompt.userChoice
-    setDeferredPrompt(null)
-  }
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+  };
 
-  return { canInstall: Boolean(deferredPrompt), install }
+  return { canInstall: Boolean(deferredPrompt), install };
 }
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false)
-  const { canInstall, install } = useInstallPrompt()
-  const { pathname } = useLocation()
-  const onLanding = pathname === '/'
+  const [open, setOpen] = useState(false);
+  const { canInstall, install } = useInstallPrompt();
+  const { pathname } = useLocation();
+  const onLanding = pathname === '/';
 
-  const close = () => setOpen(false)
+  const close = () => setOpen(false);
 
   const handleClick = (href) => {
-    close()
+    close();
     if (onLanding) {
-      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' })
+      document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
     }
-  }
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink/10 bg-white/90 backdrop-blur">
@@ -68,9 +69,18 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-2 md:flex">
           {canInstall && (
-            <button type="button" onClick={install} className="btn-ghost text-sm">
+            <button
+              type="button"
+              onClick={install}
+              className="btn-ghost text-sm"
+            >
               Install app
             </button>
+          )}
+          {session() && (
+            <NavLink to="/dashboard" className="btn-ghost text-sm">
+              Dashboard
+            </NavLink>
           )}
           <NavLink to="/login" className="btn-ghost text-sm">
             Login
@@ -87,7 +97,13 @@ export default function Navbar() {
           aria-expanded={open}
           className="grid size-10 place-items-center rounded-xl text-ink hover:bg-ink/5 md:hidden"
         >
-          <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            viewBox="0 0 24 24"
+            className="size-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             {open ? (
               <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
             ) : (
@@ -113,19 +129,36 @@ export default function Navbar() {
           </div>
           <div className="mt-4 flex flex-col gap-2">
             {canInstall && (
-              <button type="button" onClick={install} className="btn-outline w-full text-sm">
+              <button
+                type="button"
+                onClick={install}
+                className="btn-outline w-full text-sm"
+              >
                 Install app
               </button>
             )}
-            <Link to="/login" onClick={close} className="btn-outline w-full text-sm">
+            {session() && (
+              <Link to="/dashboard" onClick={close} className="btn-outline">
+                Dashboard
+              </Link>
+            )}
+            <Link
+              to="/login"
+              onClick={close}
+              className="btn-outline w-full text-sm"
+            >
               Login
             </Link>
-            <Link to="/register" onClick={close} className="btn-primary w-full text-sm">
+            <Link
+              to="/register"
+              onClick={close}
+              className="btn-primary w-full text-sm"
+            >
               Sign up
             </Link>
           </div>
         </div>
       )}
     </header>
-  )
+  );
 }
