@@ -1,2 +1,4 @@
-allowBuilds:
-  '@scarf/scarf': set this to true or false
+packages:
+  - .
+onlyBuiltDependencies:
+  - "@scarf/scarf"
