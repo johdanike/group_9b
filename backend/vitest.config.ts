@@ -1,12 +1,11 @@
 import { defineConfig } from 'vitest/config';
+import { nestTypescript } from './vitest-transform.js';
 
 export default defineConfig({
-  // Resolves the path aliases declared in tsconfig.json, including the ones
-  // added by `nest g library`. Requires Vite 8, which ships this option.
-  resolve: { tsconfigPaths: true },
+  plugins: [nestTypescript()],
   test: {
     globals: true,
-    root: './',
-    include: ['**/*.spec.ts'],
+    include: ['src/**/*.spec.ts'],
+    setupFiles: ['./test/setup.ts'],
   },
 });
