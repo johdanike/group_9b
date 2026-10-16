@@ -275,7 +275,7 @@ export default function Landing() {
               Built for people at the same place
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-ink-soft sm:text-base">
-              Everything you need to know what is happening around you — nothing you do not.
+              Everything you need to know about what's happening around you — nothing you don't.
             </p>
           </div>
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
