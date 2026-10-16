@@ -1,4 +1,3 @@
 packages:
-  - .
-onlyBuiltDependencies:
-  - "@scarf/scarf"
+  - backend
+  - frontend

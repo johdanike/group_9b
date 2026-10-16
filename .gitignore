@@ -83,3 +83,10 @@ pids
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 >>>>>>> a51eb7f5b6fd6a0a6526bfe34c767a21a44100db
+
+# Workspace outputs and private study notes
+**/node_modules/
+**/dist/
+**/coverage/
+.local/
+Local_Intelligence_Community_Distress_PRD_v1(1).docx
