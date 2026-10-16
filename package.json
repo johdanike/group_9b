@@ -3,16 +3,24 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "backend",
-    "frontend"
+    "backend"
   ],
   "scripts": {
-    "dev": "node scripts/dev.mjs",
-    "build": "npm run build --workspace backend && npm run build --workspace frontend",
+    "build": "npm run build --workspace backend",
+    "start": "npm run start --workspace backend",
+    "start:dev": "npm run start:dev --workspace backend",
+    "start:debug": "npm run start:debug --workspace backend",
+    "start:prod": "npm run start:prod --workspace backend",
+    "format": "prettier --write \"backend/src/**/*.ts\" \"backend/test/**/*.ts\"",
+    "lint": "npm run lint --workspace backend",
     "test": "npm run test --workspace backend",
-    "test:e2e": "node --env-file=backend/.env --test scripts/demo.e2e.mjs",
-    "demo:seed": "npm run demo:seed --workspace backend",
+    "test:watch": "npm run test:watch --workspace backend",
+    "test:cov": "npm run test:cov --workspace backend",
+    "test:debug": "npm run test:debug --workspace backend",
+    "test:e2e": "npm run test:e2e --workspace backend",
     "db:up": "docker compose -p signal-demo up -d --wait",
-    "db:down": "docker compose -p signal-demo down"
+    "db:down": "docker compose -p signal-demo down",
+    "db:logs": "docker compose -p signal-demo logs -f postgres",
+    "demo:seed": "npm run demo:seed --workspace backend"
   }
 }

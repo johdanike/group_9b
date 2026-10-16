@@ -1,0 +1,4 @@
+packages:
+  - 'backend'
+allowBuilds:
+  '@scarf/scarf': false
