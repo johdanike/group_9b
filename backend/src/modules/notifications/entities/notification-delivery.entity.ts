@@ -44,6 +44,15 @@ export class NotificationDelivery {
   @Column({ type: 'jsonb', nullable: true })
   payload: { title: string; body: string; reportId: string };
 
+  @Column({ type: 'varchar', name: 'push_state', default: 'none' })
+  pushState: string;
+
+  @Column({ type: 'int', name: 'push_attempts', default: 0 })
+  pushAttempts: number;
+
+  @Column({ type: 'timestamptz', name: 'push_next_attempt_at', nullable: true })
+  pushNextAttemptAt: Date | null;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

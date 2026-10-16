@@ -1,3 +1,6 @@
+import { WebPushDevice } from './entities/web-push-device.entity.js';
+import { WebPushService } from './web-push.service.js';
+import { WebPushController } from './web-push.controller.js';
 import { IdentityModule } from '../identity/identity.module.js';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -10,10 +13,14 @@ import { NotificationDelivery } from './entities/notification-delivery.entity.js
 @Module({
   imports: [
     IdentityModule,
-    TypeOrmModule.forFeature([NotificationSubscription, NotificationDelivery]),
+    TypeOrmModule.forFeature([
+      NotificationSubscription,
+      NotificationDelivery,
+      WebPushDevice,
+    ]),
   ],
-  controllers: [NotificationsController],
-  providers: [NotificationsService, NotificationsRepository],
+  controllers: [NotificationsController, WebPushController],
+  providers: [NotificationsService, NotificationsRepository, WebPushService],
   exports: [NotificationsService, NotificationsRepository],
 })
 export class NotificationsModule {}

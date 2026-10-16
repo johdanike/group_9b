@@ -144,6 +144,33 @@ test('frontend-facing API journey and trust boundaries', async (t) => {
       401,
     );
   });
+  await t.test(
+    'Web Push configuration is authenticated and never returns the private key',
+    async () => {
+      assert.equal((await call('/notifications/push/config')).status, 401);
+      const config = await call('/notifications/push/config', {
+        token: author.token,
+      });
+      assert.equal(config.status, 200);
+      assert.equal(config.data.enabled, true);
+      assert.match(config.data.publicKey, /^[A-Za-z0-9_-]{87}$/);
+      assert.equal(config.data.privateKey, undefined);
+    },
+  );
+  await t.test(
+    'device registration rejects arbitrary outbound endpoints',
+    async () => {
+      const response = await call('/notifications/push/devices', {
+        token: author.token,
+        method: 'POST',
+        body: {
+          endpoint: 'https://127.0.0.1/private',
+          keys: { auth: 'a'.repeat(22), p256dh: 'b'.repeat(87) },
+        },
+      });
+      assert.equal(response.status, 400);
+    },
+  );
   await t.test('profiles cannot assign their own privileged role', async () => {
     assert.equal(
       (

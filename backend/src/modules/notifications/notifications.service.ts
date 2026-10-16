@@ -68,6 +68,7 @@ export class NotificationsService {
           incidentIdOrSosId: report.id,
           channel: 'in_app',
           provider: 'local-inbox',
+          pushState: 'queued',
           attempt: 1,
           deliveryState: 'delivered',
           timestamps: { deliveredAt: new Date() },
