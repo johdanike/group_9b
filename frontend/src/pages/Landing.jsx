@@ -144,10 +144,10 @@ export default function Landing() {
         />
         <div className="container-app relative grid items-center gap-12 py-16 sm:py-20 lg:grid-cols-2 lg:py-24">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary-soft px-4 py-1.5 text-xs font-semibold text-ink">
+            {/* <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary-soft px-4 py-1.5 text-xs font-semibold text-ink">
               <span className="size-1.5 animate-pulse rounded-full bg-primary" />
               Live across Lagos
-            </span>
+            </span> */}
             <h1 className="mt-5 text-4xl font-black leading-[1.05] tracking-tight text-ink sm:text-5xl lg:text-6xl">
               Something happen?
               <br />
