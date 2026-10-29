@@ -831,6 +831,9 @@ packages:
   '@scarf/scarf@1.4.0':
     resolution: {integrity: sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==}
 
+  '@sinclair/typebox@0.34.52':
+    resolution: {integrity: sha512-XiMQh7qqVlxZzcVD+kkGMNGMzcTrDMLWI7S4x7z1MkCkbDPrekpZXEUK0eZqZFMuHQg2a2DZOcDIh9o5v3Gonw==}
+
   '@sindresorhus/is@4.6.0':
     resolution: {integrity: sha512-t09vSN3MdfsyCHoFcTRCH/iUtG7OJ0CsjzB8cjAmKc/va/kIgeDI/TxsigdncE/4be734m0cvIYwNaV4i2XqAw==}
     engines: {node: '>=10'}
@@ -874,6 +877,18 @@ packages:
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
+
+  '@types/istanbul-lib-coverage@2.0.6':
+    resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
+
+  '@types/istanbul-lib-report@3.0.3':
+    resolution: {integrity: sha512-NQn7AHQnk/RSLOxrBbGyJM/aVQ+pjj5HCgasFxc0K/KhoATfQ/47AyUl15I2yBUpihjmas+a+VJBOqecrFH+uA==}
+
+  '@types/istanbul-reports@3.0.4':
+    resolution: {integrity: sha512-pk2B1NWalF9toCRu6gjBzR69syFjP4Od8WRAX+0mmf9lAjCRicLOWc+ZrxZHx/0XRjotgkF9t6iaMJ+aXcOdZQ==}
+
+  '@types/jest@30.0.0':
+    resolution: {integrity: sha512-XTYugzhuwqWjws0CVz8QpM36+T+Dz5mTEBKhNs/esGLnCIlGdRy+Dq78NRjd7ls7r8BC8ZRMOrKlkO1hU0JOwA==}
 
   '@types/jsonwebtoken@9.0.10':
     resolution: {integrity: sha512-asx5hIG9Qmf/1oStypjanR7iKTv0gXQ1Ov/jfrX6kS/EO0OFni8orbmGCn0672NHR3kXHwpAwR+B368ZGN/2rA==}
@@ -922,6 +937,12 @@ packages:
 
   '@types/validator@13.15.10':
     resolution: {integrity: sha512-T8L6i7wCuyoK8A/ZeLYt1+q0ty3Zb9+qbSSvrIVitzT3YjZqkTZ40IbRsPanlB4h1QB3JVL1SYCdR6ngtFYcuA==}
+
+  '@types/yargs-parser@21.0.3':
+    resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
+
+  '@types/yargs@17.0.35':
+    resolution: {integrity: sha512-qUHkeCyQFxMXg79wQfTtfndEC+N9ZZg76HJftDJp+qH2tV7Gj4OJi7l+PiWwJ+pWtW8GwSmqsDj/oymhrTWXjg==}
 
   '@vitest/coverage-v8@4.1.11':
     resolution: {integrity: sha512-8MVGEFnJIcdGjcbfKmeq8z0pZHH0JlVtoVZH9Q/qwUp6wyFnEJUBMrw9DCaj+ra3vShGmhavjalMIhPNxZAUcw==}
@@ -1115,6 +1136,10 @@ packages:
   chokidar@5.0.0:
     resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
     engines: {node: '>= 20.19.0'}
+
+  ci-info@4.4.0:
+    resolution: {integrity: sha512-77PSwercCZU2Fc4sX94eF8k8Pxte6JAwL4/ICZLFjJLqegs7kCuAsqqj/70NQF6TvDpgFjkubQB2FW2ZZddvQg==}
+    engines: {node: '>=8'}
 
   class-transformer@0.5.1:
     resolution: {integrity: sha512-SQa1Ws6hUbfC98vKGxZH3KFY0Y1lm5Zm0SY8XX9zbK7FJCyVEac3ATW0RIpwzW+oOfmHE5PMPufDG9hCfoEOMw==}
@@ -1613,6 +1638,9 @@ packages:
 
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
+
+  js-tokens@4.0.0:
+    resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
   js-yaml@5.4.2:
     resolution: {integrity: sha512-m+aqu+LwO1O6sIopafj8HUVl5aawITwZQe/yHpMCKjaWBaA/d07B/QdMb3529REftiU+RMMHL3Vlsw3hON7vWg==}
@@ -3105,6 +3133,8 @@ snapshots:
 
   '@scarf/scarf@1.4.0': {}
 
+  '@sinclair/typebox@0.34.52': {}
+
   '@sindresorhus/is@4.6.0': {}
 
   '@sqltools/formatter@1.2.5': {}
@@ -3154,6 +3184,21 @@ snapshots:
       '@types/serve-static': 2.2.0
 
   '@types/http-errors@2.0.5': {}
+
+  '@types/istanbul-lib-coverage@2.0.6': {}
+
+  '@types/istanbul-lib-report@3.0.3':
+    dependencies:
+      '@types/istanbul-lib-coverage': 2.0.6
+
+  '@types/istanbul-reports@3.0.4':
+    dependencies:
+      '@types/istanbul-lib-report': 3.0.3
+
+  '@types/jest@30.0.0':
+    dependencies:
+      expect: 30.5.2
+      pretty-format: 30.5.1
 
   '@types/jsonwebtoken@9.0.10':
     dependencies:
@@ -3216,6 +3261,12 @@ snapshots:
       '@types/superagent': 8.1.11
 
   '@types/validator@13.15.10': {}
+
+  '@types/yargs-parser@21.0.3': {}
+
+  '@types/yargs@17.0.35':
+    dependencies:
+      '@types/yargs-parser': 21.0.3
 
   '@vitest/coverage-v8@4.1.11(vitest@4.1.11)':
     dependencies:
@@ -3419,6 +3470,8 @@ snapshots:
   chokidar@5.0.0:
     dependencies:
       readdirp: 5.1.1
+
+  ci-info@4.4.0: {}
 
   class-transformer@0.5.1: {}
 
@@ -3930,6 +3983,8 @@ snapshots:
       picomatch: 4.0.7
 
   js-tokens@10.0.0: {}
+
+  js-tokens@4.0.0: {}
 
   js-yaml@5.4.2:
     dependencies:
