@@ -1,12 +1,13 @@
 {
   "name": "neighbourhood-signal",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
   "private": true,
-  "license": "UNLICENSED",
-  "type": "module",
+  "version": "0.1.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
+<<<<<<< HEAD
     "build": "nest build",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -69,5 +70,16 @@
     "onlyBuiltDependencies": [
       "@scarf/scarf"
     ]
+=======
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build --workspace backend && npm run build --workspace frontend",
+    "test": "npm run test --workspace backend",
+    "test:e2e": "node --env-file=backend/.env --test scripts/demo.e2e.mjs",
+    "demo:seed": "npm run demo:seed --workspace backend",
+    "db:up": "docker compose -p signal-demo up -d --wait",
+    "db:down": "docker compose -p signal-demo down",
+    "demo:serve": "node scripts/serve-demo.mjs",
+    "demo:share": "node scripts/share-demo.mjs"
+>>>>>>> demo/pitch-integration
   }
 }
